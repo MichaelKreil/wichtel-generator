@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>Wichteln</title>
+	<title>Wichtel-Generator</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<style>
 		html, body {
@@ -28,7 +28,7 @@
 			padding: 5px 30px 30px 30px;
 			border-radius: 30px;
 			box-sizing: border-box;
-			transition: margin 1.5s, background 1.5s, backdrop-filter 1.5s;
+			transition: margin 0.5s, background 0.5s, backdrop-filter 0.5s;
 		}
 		h1 {
 			font-size: 30px;
@@ -98,10 +98,22 @@
 				color: {{color.text}};
 			}
 			.theme_{{name}} #wrapper {
-				{{#posX.left}}   margin-left:  5vw; margin-right: 45vw; {{/posX.left}}
-				{{#posX.center}} margin-left: 25vw; margin-right: 25vw; {{/posX.center}}
-				{{#color.black}} backdrop-filter: blur(15px) brightness(90%); {{/color.black}}
-				{{#color.white}} backdrop-filter: blur(15px) contrast(90%) brightness(111%); {{/color.white}}
+				{{#posX.left}}
+					margin-left:  5vw;
+					margin-right: 45vw;
+				{{/posX.left}}
+				{{#posX.center}}
+					margin-left: 25vw;
+					margin-right: 25vw;
+				{{/posX.center}}
+				{{#color.black}}
+					backdrop-filter: blur(15px) brightness(90%);
+					-webkit-backdrop-filter: blur(15px) brightness(90%);
+				{{/color.black}}
+				{{#color.white}}
+					backdrop-filter: blur(15px) contrast(90%) brightness(111%);
+					-webkit-backdrop-filter: blur(15px) contrast(90%) brightness(111%);
+				{{/color.white}}
 			}
 			{{#color.black}} 
 			.theme_{{name}} .thumb:hover {
@@ -134,6 +146,12 @@
 			}
 			{{/color.black}} 
 		{{/themes}}
+		@media (max-width: 600px) {
+			#wrapper {
+				margin-right: 5vw !important;
+				margin-left: 5vw !important;
+			}
+		}
 	</style>
 </head>
 <body id="body" class="theme_{{theme}}">
