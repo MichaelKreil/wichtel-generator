@@ -10,10 +10,11 @@ import bodyParser from 'body-parser';
 
 const port = process.env.PORT ?? 8080;
 const devMode = true;
-const basename = 'https://wichtel-generator.develop.brdata-dev.de/'
+const basename = process.env.BASEURL ?? 'https://wichtel-generator.michael-kreil.de/'
 const codeChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const __dirname = new URL('./', import.meta.url).pathname
 
+const db = new Map();
 const names = loadNames('singer.txt')
 const themes = JSON.parse(readFileSync(resolve(__dirname, '../data/themes.json'), 'utf8'));
 
@@ -31,16 +32,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 async function getTopf(id) {
 	try {
-		let data = await db.collection('wichtel-generator').doc(id).get();
-		return JSON.parse(data.data().content);
+		return db.get(id);
 	} catch (e) {
 		return false;
 	}
 }
 
 async function setTopf(id, topf) {
-	let data = { content: JSON.stringify(topf) };
-	await db.collection('wichtel-generator').doc(id).set(data);
+	db.set(id, topf);
 }
 
 app.use('/assets', express.static(resolve(__dirname, '../web')));
@@ -103,7 +102,7 @@ app.post('/:id/danke', async (req, res) => {
 	if (!topf) return respond(res, { errorNotFound: true });
 	if (topf.closed) return respond(res, { ergebnis: true, liste: generateList(topf) }, topf);
 
-	let name = req.body.name;
+	let name = ("" + req.body.name).trim();
 	let cookie = req.body.cookie;
 	let codeName;
 	let person = topf.persons.find(p => (p.cookie === cookie) && (p.name === name));
@@ -160,12 +159,7 @@ function generateCode() {
 
 function generateName() {
 	let i = Math.floor(Math.random() * names.length);
-	let j = Math.floor(Math.random() * names.length);
-	if (Math.random() > 0.01) j = i;
-	return [
-		names[i][0],
-		names[j][1],
-	].join(' ');
+	return names[i];
 }
 
 function generateList(topf) {

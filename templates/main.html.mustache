@@ -218,14 +218,14 @@
 
 		<h2 align="center">Bitte gib hier deinen Vor- und Nachnamen an:</h2>
 		<p><input type="hidden" name="cookie" value="{{cookie}}"></p>
-		<p><input type="text" name="name" value="" maxlength="100" size="24" placeholder="" required></p>
+		<p><input type="text" name="name" value="" maxlength="100" size="24" placeholder="" required style="max-width: 100%; box-sizing: border-box;"></p>
 		<p><input type="submit" value="Mitmachen"></p>
 		</form>
 	{{/topf}}
 	{{#danke}}
 		<p>Schön, dass du mitmachst.<br>
 		Bitte merke dir deinen geheimen Codenamen.</p>
-		<h2>Dein geheimer Codename lautet: <b>{{codeName}}</b></h2>
+		<h2>Dein geheimer Codename lautet: <b style="white-space:nowrap">{{codeName}}</b></h2>
 		<p>Es ist sehr wichtig, dass du dir deinen Codenamen gut merkst. Schreibe ihn dir am Besten irgendwo auf.<br>Du darfst aber deinen geheimen Codenamen niemand anderem verraten, denn er ist geheim!</p>
 	{{/danke}}
 	{{#schliessen}}
