@@ -7,7 +7,6 @@ import express from 'express';
 import mustache from 'mustache';
 import { resolve } from 'node:path';
 import bodyParser from 'body-parser';
-import audit from 'express-requests-logger'
 
 const port = process.env.PORT ?? 8080;
 const devMode = true;
@@ -31,7 +30,6 @@ const render = (() => {
 })()
 
 const app = express();
-app.use(audit())
 app.use(bodyParser.urlencoded({ extended: true }));
 
 async function getTopf(id) {
