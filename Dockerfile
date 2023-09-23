@@ -4,7 +4,8 @@ ENV APP_DIR="/app"
 
 WORKDIR $APP_DIR
 
-COPY src package* "$APP_DIR/"
+COPY src "$APP_DIR/src"
+COPY package* "$APP_DIR/"
 
 RUN npm i
 
