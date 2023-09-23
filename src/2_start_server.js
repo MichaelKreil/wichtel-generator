@@ -153,6 +153,8 @@ app.listen(port, () => {
 	console.log('listening at port ' + port)
 })
 
+process.on('exit', () => console.log('exiting'))
+
 function generateCode() {
 	let code = [];
 	for (let i = 0; i < 12; i++) code.push(codeChars[Math.floor(Math.random() * codeChars.length)]);

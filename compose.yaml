@@ -6,7 +6,7 @@ services:
          - 80
       environment:
          BASEURL: https://wichteln.michael-kreil.de/
-         VIRTUAL_HOST: wichteln.michael-kreil.de
+         VIRTUAL_HOST: 127.0.0.1
          LETSENCRYPT_HOST: wichteln.michael-kreil.de
          PORT: 80
       depends_on:
@@ -17,7 +17,7 @@ services:
       container_name: nginx-proxy
       ports:
          - '80:80'
-         - '443:443'
+         - '443:4433'
       volumes:
          - conf:/etc/nginx/conf.d
          - vhost:/etc/nginx/vhost.d
@@ -45,8 +45,3 @@ volumes:
    html:
    certs:
    acme:
-
-networks:
-   default:
-      external:
-         name: nginx-proxy
