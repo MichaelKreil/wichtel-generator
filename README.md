@@ -15,8 +15,15 @@ There are two environment variables:
   - Image: Docker CE
   - Type: CAX11 (smallest ARM64)
 - Login via SSH
-- run
+
+### unencrypted:
+
 ```bash
 docker pull "ghcr.io/michaelkreil/wichtel-generator:latest"
-docker run -e BASEURL="https://wichteln.michael-kreil.de/" -it "ghcr.io/michaelkreil/wichtel-generator:latest"
+docker run -itdp "8080:8080" -e BASEURL="https://wichteln.michael-kreil.de/" "ghcr.io/michaelkreil/wichtel-generator:latest"
+```
+
+### encrypted:
+```bash
+docker compose up
 ```
