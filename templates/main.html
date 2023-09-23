@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Wichteln</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		html, body {
+			height: 100%;
+			width: 100%;
+			overflow: auto;
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			background-attachment: fixed;
+			background-position: center center;
+			background-size: cover;
+			font-family: sans-serif;
+			font-weight: 300;
+			font-size: 16px;
+			line-height: 1.3em;
+		}
+		#wrapper {
+			text-align: left;
+			margin-top: 50px;
+			margin-bottom: 100px;
+			padding: 5px 30px 30px 30px;
+			border-radius: 30px;
+			box-sizing: border-box;
+			transition: margin 1.5s, background 1.5s, backdrop-filter 1.5s;
+		}
+		h1 {
+			font-size: 30px;
+			font-weight: 500;
+			margin: 30px 0 15px;
+			line-height: 1.3em;
+		}
+		h2 {
+			font-size: 20px;
+			font-weight: 500;
+			margin: 30px 0 15px;
+			line-height: 1.3em;
+		}
+		a,b {
+			font-weight: 600;
+			color: #000;
+			text-decoration: none;
+		}
+		a:hover {
+			text-decoration: underline;
+		}
+		.thumb {
+			width: 24.9%;
+			float: left;
+			cursor: pointer;
+			box-sizing: border-box;
+			border: 2px solid transparent;
+			border-radius: 2px;
+		}
+		.thumb:hover {
+			border-color: #000;
+		}
+		input {
+			border: 2px solid transparent;
+			border-radius: 10px;
+			padding: 10px;
+			color: #000;
+			cursor: pointer;
+			font-weight: 500;
+			font-size: 20px;
+			display: block;
+			margin: 10px auto;
+			outline: none;
+			transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+		}
+		input:focus {
+			border-color: #000;
+		}
+		input[type="text"] {
+			background-color: rgba(0,0,0,0.1);
+		}
+		input[type="text"]:hover {
+			background-color: rgba(0,0,0,0.2);
+		}
+		input[type="submit"] {
+			border-color: #000;
+			background-color: #000;
+			color: #fff;
+		}
+		input[type="submit"]:hover, input[type="submit"]:focus {
+			background-color: transparent;
+			color: #000;
+		}
+		{{#themes}}
+			.theme_{{name}} {
+				background-image: url(/assets/images/background/{{filename}});
+				color: {{color.text}};
+			}
+			.theme_{{name}} #wrapper {
+				{{#posX.left}}   margin-left:  5vw; margin-right: 45vw; {{/posX.left}}
+				{{#posX.center}} margin-left: 25vw; margin-right: 25vw; {{/posX.center}}
+				{{#color.black}} backdrop-filter: blur(15px) brightness(90%); {{/color.black}}
+				{{#color.white}} backdrop-filter: blur(15px) contrast(90%) brightness(111%); {{/color.white}}
+			}
+			{{#color.black}} 
+			.theme_{{name}} .thumb:hover {
+				border-color: #fff;
+			}
+			.theme_{{name}} input {
+				color: #fff;
+			}
+			.theme_{{name}} input:focus {
+				border-color: #fff;
+			}
+			.theme_{{name}} input[type="text"] {
+				background-color: rgba(255,255,255,0.1);
+			}
+			.theme_{{name}} input[type="text"]:hover {
+				background-color: rgba(255,255,255,0.2);
+			}
+			.theme_{{name}} input[type="submit"] {
+				border-color: #fff;
+				background-color: #fff;
+				color: #000;
+			}
+			.theme_{{name}} input[type="submit"]:hover,
+			.theme_{{name}} input[type="submit"]:focus {
+				background-color: transparent;
+				color: #fff;
+			}
+			.theme_{{name}} a, .theme_{{name}} b {
+				color: #fff;
+			}
+			{{/color.black}} 
+		{{/themes}}
+	</style>
+</head>
+<body id="body" class="theme_{{theme}}">
+	<div id="wrapper">
+	{{#errorZu}}
+		<h1>Der Wichteltopf ist leider schon geschlossen.</h1>
+	{{/errorZu}}
+	{{#errorBenutzung}}
+		<h1>Der Wichteltopf ist leider schon in Benutzung.</h1>
+		<p>Möchtest du vielleicht einen <a href="/">neuen Wichteltopf anlegen</a>?</p>
+	{{/errorBenutzung}}
+	{{#errorNichtDeiner}}
+		<h1>Der Wichteltopf scheint nicht dir zu gehören.</h1>
+		<p>Hast du den richtigen Link geöffnet?</p>
+		<p>Möchtest du vielleicht einen <a href="/">neuen Wichteltopf anlegen</a>?</p>
+	{{/errorNichtDeiner}}
+	{{#errorNotFound}}
+		<h1>Seite nicht gefunden</h1>
+		<p>Hast du den richtigen Link geöffnet?</p>
+		<p>Möchtest du vielleicht einen <a href="/">neuen Wichteltopf anlegen</a>?</p>
+	{{/errorNotFound}}
+	{{#start}}
+		<h1>Wichteltopf-Generator</h1>
+		<p>Hier kann man sich kostenfrei einen Online-Wichteltopf einrichten.</p>
+		<h2>Wie funktioniert es?</h2>
+		<p>Beim Wichteln, auch bekannt als Julklapp, Secret Santa oder &bdquo;Engerl und Bengerl&rdquo;, beschenken sich Freund*innen und Kolleg*innen gegenseitig.</p>
+		<p>Hier kann man sich einen Wichteltopf erstellen, um die Namen auszulosen, dabei bekommmt zwei Links:</p>
+		<p>Einen Link verteilt man an alle Teilnehmer*innen, damit sie sich eintragen können. Jeder, der seinen Namen in den Topf wirft, bekommt einen Geheimnamen zugewiesen, den man sich merken muss, aber nicht den anderen sagen darf.</p>
+		<p>Wenn alle ihren Namen eingetragen haben, kann man mit dem zweiten Link den Topf schließen. Jetzt werden alle Namen ausgezählt. Dabei wird jedem Geheimnamen eine Person zugewiesen, die er beschenken muss.</p>
+		<h2>Wähle ein Design aus:</h2>
+		<div style="display:relative;">
+			{{#themes}}
+			<img class="thumb" src="/assets/images/thumbnail/{{filename}}" onclick="setTheme('{{name}}')" />
+			{{/themes}}
+			<br clear="all">
+		</div>
+		<h2>Wichteltopf einrichten:</h2>
+		<p>
+			<form action="/{{id}}/feuer" method="POST">
+				<input type="submit" value="Hier klicken">
+				<input type="hidden" name="theme" id="inputTheme" value="{{theme}}">
+			</form>
+		</p>
+		<script type="text/javascript">
+			function setTheme(name) {
+				document.getElementById('body').className = 'theme_'+name;
+				document.getElementById('inputTheme').value = name;
+			}
+		</script>
+	{{/start}}
+	{{#init}}
+		<h1>Wichteltopf angelegt</h1>
+		<p>Bitte merke dir die beiden folgenden Links.<br>Am besten kopierst du sie zur Sicherheit irgendwo hin.</p>
+		<p>Der Link zu deinem Topf, den du an alle deine Wichtel verteilen kannst, lautet:<br>
+		<a href="/{{id}}">{{basename}}{{id}}</a></p>
+		<p>Der geheime Link, um deinen Wichteltopf zu schließen und auszuzählen, lautet:<br>
+		<a href="/{{id}}/deckelzu/{{adminCode}}">{{basename}}{{id}}/deckelzu/{{adminCode}}</a></p>
+	{{/init}}
+	{{#topf}}
+		<form action="/{{id}}/danke" method="POST">
+
+		{{^personList}}<p align="center">Sei die/der erste beim Wichteln.</p>{{/personList}}
+		{{#personList}}<p align="center">{{personList}} {{#personSingle}}macht{{/personSingle}}{{^personSingle}}machen{{/personSingle}} bereits beim Wichteln mit.</p>{{/personList}}
+
+		<h2 align="center">Bitte gib hier deinen Vor- und Nachnamen an:</h2>
+		<p><input type="hidden" name="cookie" value="{{cookie}}"></p>
+		<p><input type="text" name="name" value="" maxlength="100" size="24" placeholder="" required></p>
+		<p><input type="submit" value="Mitmachen"></p>
+		</form>
+	{{/topf}}
+	{{#danke}}
+		<p>Schön, dass du mitmachst.<br>
+		Bitte merke dir deinen geheimen Codenamen.</p>
+		<h2>Dein geheimer Codename lautet: <b>{{codeName}}</b></h2>
+		<p>Es ist sehr wichtig, dass du dir deinen Codenamen gut merkst. Schreibe ihn dir am Besten irgendwo auf.<br>Du darfst aber deinen geheimen Codenamen niemand anderem verraten, denn er ist geheim!</p>
+	{{/danke}}
+	{{#schliessen}}
+		<form action="/{{id}}/deckelzu/{{adminCode}}" method="POST">
+
+		{{^personList}}<p align="center">Der Wichteltopf ist leer.</p>{{/personList}}
+		{{#personList}}<p align="center">Die Namen {{personList}} {{#personSingle}}ist{{/personSingle}}{{^personSingle}}sind{{/personSingle}} im Wichteltopf.</p>{{/personList}}
+
+		<p>Bist du dir sicher, dass du den Topf schließen und auswerten möchtest?<br>Es können dann keine weiteren Wichtel mehr teilnehmen.</p>
+		<p><input type="submit" value="Topf auszählen"></p>
+		</form>
+	{{/schliessen}}
+
+	{{#ergebnis}}
+		<h2>Die Ziehung ist abgeschlossen.</h2>
+		<p>Das Ergebnis:</p>
+		<p>{{#liste}}»<b>{{codeName}}</b>« wichtelt an <b>{{name}}</b><br>{{/liste}}
+		</p>
+	{{/ergebnis}}
+	</div>
+	
+	<script src="/assets/snowflakes.js"></script>
+	<script>Snowflakes();</script>
+	
+</body>
+</html>
