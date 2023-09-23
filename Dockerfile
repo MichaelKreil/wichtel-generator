@@ -1,7 +1,7 @@
 FROM node:latest
 
 ENV APP_DIR="/app"
-
+EXPOSE 8080
 WORKDIR $APP_DIR
 
 COPY src "$APP_DIR/src"
