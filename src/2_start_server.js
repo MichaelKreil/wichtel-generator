@@ -15,7 +15,7 @@ const basename = process.env.BASEURL ?? 'https://wichtel-generator.michael-kreil
 const codeChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const __dirname = new URL('./', import.meta.url).pathname
 
-const names = loadNames('singer.txt');
+const names = loadNames('singers.txt');
 const themes = JSON.parse(readFileSync(resolve(__dirname, 'data/themes.json'), 'utf8'));
 const databasePath = resolve(__dirname, '../database');
 
