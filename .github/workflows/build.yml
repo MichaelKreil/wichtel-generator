@@ -7,9 +7,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  delete:
+    name: Delete old containers
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete untagged images
+        uses: actions/github-script@v6.3.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.request("GET /user/packages/container/wichtel-generator/versions", { per_page: 100 });
+            for (version of response.data) {
+              if (version.metadata.container.tags.length == 0) {
+                console.log("delete " + version.id);
+                const deleteResponse = await github.request("DELETE /user/packages/container/wichtel-generator/versions/" + version.id, { });
+                console.log("status " + deleteResponse.status);
+              }
+            }
+
   build:
     name: Build Docker
     runs-on: ubuntu-latest
+    needs:
+      - delete
     permissions:
       packages: write
       contents: read
@@ -42,26 +65,3 @@ jobs:
           file: Dockerfile
           push: true
           tags: ghcr.io/michaelkreil/wichtel-generator:latest
-
-  delete:
-    name: Delete old containers
-    permissions:
-      packages: write
-      contents: read
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete untagged images
-        uses: actions/github-script@v6.3.3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const response = await github.request("GET /user/packages/container/wichtel-generator/versions", { per_page: 100 });
-            for (version of response.data) {
-              if (version.metadata.container.tags.length == 0) {
-                console.log("delete " + version.id);
-                const deleteResponse = await github.request("DELETE /user/packages/container/wichtel-generator/versions/" + version.id, { });
-                console.log("status " + deleteResponse.status);
-              }
-            }
