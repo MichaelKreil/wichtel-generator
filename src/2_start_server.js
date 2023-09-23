@@ -16,13 +16,13 @@ const __dirname = new URL('./', import.meta.url).pathname
 
 const db = new Map();
 const names = loadNames('singer.txt')
-const themes = JSON.parse(readFileSync(resolve(__dirname, '../data/themes.json'), 'utf8'));
+const themes = JSON.parse(readFileSync(resolve(__dirname, 'data/themes.json'), 'utf8'));
 
 const render = (() => {
 	if (devMode) {
-		return obj => mustache.render(readFileSync(resolve(__dirname, '../templates/main.html.mustache'), 'utf8'), obj);
+		return obj => mustache.render(readFileSync(resolve(__dirname, 'templates/main.html.mustache'), 'utf8'), obj);
 	} else {
-		const template = Mustache.parse(readFileSync(resolve(__dirname, '../templates/main.html.mustache'), 'utf8'));
+		const template = Mustache.parse(readFileSync(resolve(__dirname, 'templates/main.html.mustache'), 'utf8'));
 		return obj => mustache.render(template, obj);
 	}
 })()
@@ -42,7 +42,7 @@ async function setTopf(id, topf) {
 	db.set(id, topf);
 }
 
-app.use('/assets', express.static(resolve(__dirname, '../web')));
+app.use('/assets', express.static(resolve(__dirname, 'web')));
 
 function respond(res, obj, topf) {
 	obj.theme = (topf && topf.theme) || themes[Math.floor(Math.random() * themes.length)].name;
@@ -194,7 +194,7 @@ function generateWichtel() {
 }
 
 function loadNames(filename) {
-	const names = readFileSync(resolve(__dirname, '../data', filename), 'utf8')
+	const names = readFileSync(resolve(__dirname, 'data', filename), 'utf8')
 		.split('\n')
 		.filter(l => l.length > 3)
 		.map(l => l.replace(/_/g, ' '));
