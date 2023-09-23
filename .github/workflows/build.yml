@@ -54,18 +54,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const response = await github.request("GET /${{ env.OWNER }}/packages/container/${{ env.PACKAGE_NAME }}/versions",
-              { per_page: ${{ env.PER_PAGE }}
-            });
+            const response = await github.request("GET /michaelkreil/packages/container/wichtel-generator/versions", { per_page: 100 });
             for(version of response.data) {
               if (version.metadata.container.tags.length == 0) {
                 console.log("delete " + version.id)
 
-                const deleteResponse = await github.request("DELETE /${{ env.OWNER }}/packages/container/${{ env.PACKAGE_NAME }}/versions/" + version.id, { });
+                const deleteResponse = await github.request("DELETE /michaelkreil/packages/container/wichtel-generator/versions/" + version.id, { });
                 console.log("status " + deleteResponse.status)
               }
             }
-        env:
-          OWNER: user # or orgs/<org name>
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
-          PER_PAGE: 100
