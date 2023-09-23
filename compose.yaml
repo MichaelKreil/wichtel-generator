@@ -1,35 +1,41 @@
-version: '3'
+version: '2'
 services:
    wichtelgenerator:
       image: ghcr.io/michaelkreil/wichtel-generator:latest
+      restart: always
+      ports:
+         - '8080:8080'
       expose:
-         - 8080
+         - '8080'
       environment:
          BASEURL: https://wichteln.michael-kreil.de/
          VIRTUAL_HOST: wichteln.michael-kreil.de
-         VIRTUAL_PORT: 8080
+         VIRTUAL_PORT: '8080'
          LETSENCRYPT_HOST: wichteln.michael-kreil.de
-         PORT: 8080
+         PORT: '8080'
       depends_on:
          - nginx-proxy
 
    nginx-proxy:
       image: nginxproxy/nginx-proxy
       container_name: nginx-proxy
+      restart: always
       ports:
          - '80:80'
-         - '443:4433'
+         - '443:443'
       volumes:
          - conf:/etc/nginx/conf.d
          - vhost:/etc/nginx/vhost.d
          - html:/usr/share/nginx/html
          - certs:/etc/nginx/certs:ro
          - /var/run/docker.sock:/tmp/docker.sock:ro
-      network_mode: bridge
 
    acme-companion:
       image: nginxproxy/acme-companion
       container_name: nginx-proxy-acme
+      restart: always
+      depends_on:
+         - nginx-proxy
       environment:
          DEFAULT_EMAIL: letsencrypt_PQ4a66Pj5vLD@michael-kreil.de
       volumes_from:
@@ -38,7 +44,6 @@ services:
          - certs:/etc/nginx/certs:rw
          - acme:/etc/acme.sh
          - /var/run/docker.sock:/var/run/docker.sock:ro
-      network_mode: bridge
 
 volumes:
    conf:

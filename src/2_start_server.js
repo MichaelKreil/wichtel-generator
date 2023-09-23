@@ -60,7 +60,7 @@ function respond(res, obj, topf) {
 			obj.personSingle = false;
 		}
 	}
-	//console.log(obj);
+	//console.err(obj);
 	obj.themes = themes;
 	obj.basename = basename;
 	res.end(render(obj));
@@ -150,14 +150,17 @@ app.post('/:id/deckelzu/:adminCode', async (req, res) => {
 });
 
 const server = app.listen(port, () => {
-	console.log('listening at port ' + port)
+	console.err('listening at port ' + port)
 })
 
 process.on('SIGTERM', () => {
-	console.log('SIGTERM signal received: closing HTTP server')
-	server.close(() => {
-		console.log('HTTP server closed')
-	})
+	console.err('SIGTERM signal received: closing HTTP server')
+	server.close(() => console.err('HTTP server closed'))
+})
+
+process.on('SIGKILL', () => {
+	console.err('SIGKILL signal received: closing HTTP server')
+	server.close(() => console.err('HTTP server closed'))
 })
 
 
@@ -182,8 +185,8 @@ function generateList(topf) {
 			codeName: topf.persons[(i + 1) % n].codeName,
 		})
 	}
-	//console.log(topf.persons);
-	//console.log(list);
+	//console.err(topf.persons);
+	//console.err(list);
 	list.sort((a, b) => a.codeName < b.codeName ? -1 : 1);
 	return list;
 }
@@ -209,6 +212,6 @@ function loadNames(filename) {
 		.split('\n')
 		.filter(l => l.length > 3)
 		.map(l => l.replace(/_/g, ' '));
-	console.log(names);
+	console.err(names);
 	return names;
 }
