@@ -26,10 +26,10 @@ services:
          - '80:80'
          - '443:443'
       volumes:
-         - conf:/etc/nginx/conf.d
-         - vhost:/etc/nginx/vhost.d
-         - html:/usr/share/nginx/html
          - certs:/etc/nginx/certs:ro
+         - conf:/etc/nginx/conf.d
+         - html:/usr/share/nginx/html
+         - vhost:/etc/nginx/vhost.d
          - /var/run/docker.sock:/tmp/docker.sock:ro
 
    acme-companion:
@@ -43,13 +43,14 @@ services:
       volumes_from:
          - nginx-proxy
       volumes:
-         - certs:/etc/nginx/certs:rw
          - acme:/etc/acme.sh
+         - certs:/etc/nginx/certs:rw
          - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
-   conf:
-   vhost:
-   html:
-   certs:
    acme:
+   certs:
+   conf:
+   database:
+   html:
+   vhost:

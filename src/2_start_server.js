@@ -11,7 +11,7 @@ import audit from 'express-requests-logger'
 
 const port = process.env.PORT ?? 8080;
 const devMode = true;
-const basename = process.env.BASEURL ?? 'https://wichtel-generator.michael-kreil.de/'
+const basename = process.env.BASEURL ?? 'https://wichteln.michael-kreil.de/'
 const codeChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const __dirname = new URL('./', import.meta.url).pathname
 
@@ -64,7 +64,6 @@ function respond(res, obj, topf) {
 			obj.personSingle = false;
 		}
 	}
-	//console.err(obj);
 	obj.themes = themes;
 	obj.basename = basename;
 	res.end(render(obj));
@@ -154,17 +153,12 @@ app.post('/:id/deckelzu/:adminCode', async (req, res) => {
 });
 
 const server = app.listen(port, () => {
-	console.err('listening at port ' + port)
+	console.log('listening at port ' + port)
 })
 
 process.on('SIGTERM', () => {
-	console.err('SIGTERM signal received: closing HTTP server')
-	server.close(() => console.err('HTTP server closed'))
-})
-
-process.on('SIGKILL', () => {
-	console.err('SIGKILL signal received: closing HTTP server')
-	server.close(() => console.err('HTTP server closed'))
+	console.log('SIGTERM signal received: closing HTTP server')
+	server.close(() => console.log('HTTP server closed'))
 })
 
 
@@ -189,8 +183,8 @@ function generateList(topf) {
 			codeName: topf.persons[(i + 1) % n].codeName,
 		})
 	}
-	//console.err(topf.persons);
-	//console.err(list);
+	//console.log(topf.persons);
+	//console.log(list);
 	list.sort((a, b) => a.codeName < b.codeName ? -1 : 1);
 	return list;
 }
@@ -216,7 +210,7 @@ function loadNames(filename) {
 		.split('\n')
 		.filter(l => l.length > 3)
 		.map(l => l.replace(/_/g, ' '));
-	console.err(names);
+	console.log(names.length + ' names found: ' + names.join(', '));
 	return names;
 }
 
