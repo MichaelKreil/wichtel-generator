@@ -149,11 +149,18 @@ app.post('/:id/deckelzu/:adminCode', async (req, res) => {
 	return respond(res, { ergebnis: true, liste: generateList(topf) }, topf);
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
 	console.log('listening at port ' + port)
 })
 
-process.on('exit', () => console.log('exiting'))
+process.on('SIGTERM', () => {
+	console.log('SIGTERM signal received: closing HTTP server')
+	server.close(() => {
+		console.log('HTTP server closed')
+	})
+})
+
+
 
 function generateCode() {
 	let code = [];
