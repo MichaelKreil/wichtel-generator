@@ -1,4 +1,4 @@
-name: Build a single Docker image
+name: Build Docker image
 on:
   push:
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: MichaelKreil
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/checkout@v3
@@ -36,4 +36,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: Dockerfile
           push: true
-          tags: latest
+          tags: wichtel-generator:latest
