@@ -45,6 +45,9 @@ jobs:
 
   delete:
     name: Delete old containers
+    permissions:
+      packages: write
+      contents: read
     needs:
       - build
     runs-on: ubuntu-latest
@@ -55,7 +58,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const response = await github.request("GET /user/packages/container/wichtel-generator/versions", { per_page: 100 });
-            for(version of response.data) {
+            for (version of response.data) {
               if (version.metadata.container.tags.length == 0) {
                 console.log("delete " + version.id);
                 const deleteResponse = await github.request("DELETE /user/packages/container/wichtel-generator/versions/" + version.id, { });
