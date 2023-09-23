@@ -2,7 +2,7 @@
 
 'use strict'
 
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import express from 'express';
 import mustache from 'mustache';
 import { resolve } from 'node:path';
@@ -15,9 +15,11 @@ const basename = process.env.BASEURL ?? 'https://wichtel-generator.michael-kreil
 const codeChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const __dirname = new URL('./', import.meta.url).pathname
 
-const db = new Map();
-const names = loadNames('singer.txt')
+const names = loadNames('singer.txt');
 const themes = JSON.parse(readFileSync(resolve(__dirname, 'data/themes.json'), 'utf8'));
+const databasePath = resolve(__dirname, '../database');
+
+mkdirSync(databasePath, { recursive: true });
 
 const render = (() => {
 	if (devMode) {
@@ -34,23 +36,25 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 async function getTopf(id) {
 	try {
-		return db.get(id);
+		let filename = resolve(databasePath, secureID(id) + '.json');
+		return JSON.parse(readFileSync(filename));
 	} catch (e) {
 		return false;
 	}
 }
 
 async function setTopf(id, topf) {
-	db.set(id, topf);
+	let filename = resolve(databasePath, secureID(id) + '.json');
+	writeFileSync(filename, JSON.stringify(topf));
 }
 
 app.use('/assets', express.static(resolve(__dirname, 'web')));
 
 function respond(res, obj, topf) {
-	obj.theme = (topf && topf.theme) || themes[Math.floor(Math.random() * themes.length)].name;
-	obj.adminCode = topf && topf.adminCode;
-	obj.id = topf && topf.id;
-	obj.personList = topf && topf.persons && topf.persons.map(p => p.name).sort();
+	obj.theme = topf?.theme || themes[Math.floor(Math.random() * themes.length)].name;
+	obj.adminCode = topf?.adminCode;
+	obj.id = topf?.id;
+	obj.personList = topf?.persons && topf.persons.map(p => p.name).sort();
 	if (obj.personList) {
 		if (obj.personList.length <= 1) {
 			obj.personList = obj.personList[0];
@@ -69,7 +73,7 @@ function respond(res, obj, topf) {
 app.get('/', (req, res) => respond(res, { start: { id: generateWichtel() } }));
 
 app.post('/:id/feuer', async (req, res) => {
-	let id = req.params.id;
+	let id = secureID(req.params.id);
 	let theme = req.body.theme;
 	let topf = await getTopf(id);
 
@@ -88,7 +92,7 @@ app.post('/:id/feuer', async (req, res) => {
 });
 
 app.get('/:id', async (req, res) => {
-	let id = req.params.id;
+	let id = secureID(req.params.id);
 	let topf = await getTopf(id);
 
 	if (!topf) return respond(res, { errorNotFound: true });
@@ -98,7 +102,7 @@ app.get('/:id', async (req, res) => {
 });
 
 app.post('/:id/danke', async (req, res) => {
-	let id = req.params.id;
+	let id = secureID(req.params.id);
 	let topf = await getTopf(id);
 
 	if (!topf) return respond(res, { errorNotFound: true });
@@ -122,7 +126,7 @@ app.post('/:id/danke', async (req, res) => {
 });
 
 app.get('/:id/deckelzu/:adminCode', async (req, res) => {
-	let id = req.params.id;
+	let id = secureID(req.params.id);
 	let adminCode = req.params.adminCode;
 	let topf = await getTopf(id);
 
@@ -134,7 +138,7 @@ app.get('/:id/deckelzu/:adminCode', async (req, res) => {
 });
 
 app.post('/:id/deckelzu/:adminCode', async (req, res) => {
-	let id = req.params.id;
+	let id = secureID(req.params.id);
 	let adminCode = req.params.adminCode;
 	let topf = await getTopf(id);
 
@@ -214,4 +218,8 @@ function loadNames(filename) {
 		.map(l => l.replace(/_/g, ' '));
 	console.err(names);
 	return names;
+}
+
+function secureID(id) {
+	return ('' + id).replace(/[^a-zA-Z0-9]+/g, '');
 }
