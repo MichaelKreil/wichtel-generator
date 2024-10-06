@@ -11,9 +11,13 @@ There are two environment variables:
 - `BASEURL` - default: `https://wichteln.michael-kreil.de/`
 
 ## Example: Hetzner Cloud
-- Start a new Server:
-  - Image: Docker CE
-  - Type: CAX11 (smallest ARM64)
-- Login via SSH
-- download `compose.yaml`
-- run: `docker compose up`
+
+1. Start a new Server:
+   - Image: Docker CE
+   - Type: CAX11 (smallest ARM64)
+2. Ensure DNS points to the correct IP.
+3. Login via SSH and run:
+```bash
+wget "https://github.com/MichaelKreil/wichtel-generator/raw/refs/heads/main/compose.yaml"
+docker compose up --detach
+```
