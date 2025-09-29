@@ -1,19 +1,18 @@
 {
-  "name": "wichtel-generator",
   "private": true,
   "version": "1.0.0",
   "description": "",
-  "scripts": {
+  "tasks": {
     "start": "node bin/2_start_server.js",
     "upgrade": "npm-check-updates -u && rm -f package-lock.json; rm -rf node_modules; npm i && npm update"
   },
   "type": "module",
   "author": "Michael Kreil",
   "license": "MIT",
-  "dependencies": {
-    "body-parser": "^1.20.3",
-    "express": "^4.21.0",
-    "mustache": "^4.2.0",
-    "npm-check-updates": "^17.1.3"
+  "imports": {
+    "body-parser": "npm:body-parser@^2.2.0",
+    "express": "npm:express@^5.1.0",
+    "mustache": "npm:mustache@^4.2.0"
   }
 }
+
