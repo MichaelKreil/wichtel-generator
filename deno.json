@@ -3,16 +3,25 @@
   "version": "1.0.0",
   "description": "",
   "tasks": {
-    "start": "node bin/2_start_server.js",
-    "upgrade": "npm-check-updates -u && rm -f package-lock.json; rm -rf node_modules; npm i && npm update"
+    "start": "deno run --watch src/2_start_server.ts"
   },
   "type": "module",
   "author": "Michael Kreil",
   "license": "MIT",
   "imports": {
+    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "@types/express": "npm:@types/express@4.17.15",
     "body-parser": "npm:body-parser@^2.2.0",
     "express": "npm:express@^5.1.0",
-    "mustache": "npm:mustache@^4.2.0"
+    "ventojs": "npm:ventojs@^2.1.1"
+  },
+  "fmt": {
+    "useTabs": true,
+    "lineWidth": 100,
+    "indentWidth": 3,
+    "semiColons": true,
+    "singleQuote": true,
+    "proseWrap": "preserve"
   }
 }
-

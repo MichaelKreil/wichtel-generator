@@ -1,58 +1,38 @@
-#!/usr/bin/env node
-
-'use strict'
-
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import express from 'express';
-import mustache from 'mustache';
-import { resolve } from 'node:path';
+import express, { Response } from 'express';
+import { resolve } from '@std/path';
 import bodyParser from 'body-parser';
+import { Pot } from './lib/pot.ts';
+import { Theme, themes } from './lib/themes.ts';
+import { Shelf } from './lib/shelf.ts';
+import templates from './templates/templates.ts';
+import { Template } from 'ventojs/core/environment.js';
 
-const port = process.env.PORT ?? 8080;
-const devMode = true;
-const basename = process.env.BASEURL ?? 'https://wichteln.michael-kreil.de/'
+const port = Deno.env.get('PORT') ?? 8080;
+const basename = Deno.env.get('BASEURL') ?? 'https://wichteln.michael-kreil.de/';
 const codeChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const __dirname = new URL('./', import.meta.url).pathname
 
 const names = loadNames('singers.txt');
-const themes = JSON.parse(readFileSync(resolve(__dirname, 'data/themes.json'), 'utf8'));
 const databasePath = resolve(__dirname, '../database');
 
-mkdirSync(databasePath, { recursive: true });
 
-const render = (() => {
-	if (devMode) {
-		return obj => mustache.render(readFileSync(resolve(__dirname, 'templates/main.html.mustache'), 'utf8'), obj);
-	} else {
-		const template = Mustache.parse(readFileSync(resolve(__dirname, 'templates/main.html.mustache'), 'utf8'));
-		return obj => mustache.render(template, obj);
-	}
-})()
+
+const shelf = new Shelf(databasePath);
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-
-async function getTopf(id) {
-	try {
-		let filename = resolve(databasePath, secureID(id) + '.json');
-		return JSON.parse(readFileSync(filename));
-	} catch (e) {
-		return false;
-	}
-}
-
-async function setTopf(id, topf) {
-	let filename = resolve(databasePath, secureID(id) + '.json');
-	writeFileSync(filename, JSON.stringify(topf));
-}
-
 app.use('/assets', express.static(resolve(__dirname, 'web')));
 
-function respond(res, obj, topf) {
-	obj.theme = topf?.theme || themes[Math.floor(Math.random() * themes.length)].name;
-	obj.adminCode = topf?.adminCode;
-	obj.id = topf?.id;
-	obj.personList = topf?.persons && topf.persons.map(p => p.name).sort();
+interface Config {
+	[key: string]: unknown;
+	id: string;
+}
+
+async function respond(res: Response, template: Template, obj: Pot | Config) {
+	obj.theme = pot?.theme ?? themes[Math.floor(Math.random() * themes.length)].name;
+	obj.adminCode = pot?.adminCode;
+	obj.id = pot?.id;
+	obj.personList = pot?.getPersonList() ?? [];
 	if (obj.personList) {
 		if (obj.personList.length <= 1) {
 			obj.personList = obj.personList[0];
@@ -64,30 +44,27 @@ function respond(res, obj, topf) {
 	}
 	obj.themes = themes;
 	obj.basename = basename;
-	res.end(render(obj));
+	res.end(await template({ obj }));
 }
 
-app.get('/', (req, res) => respond(res, { start: { id: generateWichtel() } }));
+app.get('/', (req, res) => respond(res, templates.start, { id: shelf.generateRandomId() }));
 
 app.post('/:id/feuer', async (req, res) => {
-	let id = secureID(req.params.id);
-	let theme = req.body.theme;
-	let topf = await getTopf(id);
+	const pot = await shelf.newPot({
+		id: req.params.id,
+		theme: req.body.theme,
+		adminCode: generateCode()
+	});
 
-	if (topf) {
-		if (topf.closed) return respond(res, { errorZu: true }, topf);
-		if (topf.adminCode) return respond(res, { errorBenutzung: true }, topf);
-	} else {
-		topf = { id, persons: [] }
+	if (pot) {
+		if (pot.closed) return respond(res, { errorZu: true }, pot);
+		if (pot.adminCode) return respond(res, { errorBenutzung: true }, pot);
 	}
 
-	topf.adminCode = generateCode();
-	topf.theme = theme;
-	await setTopf(id, topf);
-
-	respond(res, { init: true }, topf)
+	respond(res, templates.init, pot)
 });
 
+/*
 app.get('/:id', async (req, res) => {
 	let id = secureID(req.params.id);
 	let topf = await getTopf(id);
@@ -149,7 +126,7 @@ app.post('/:id/deckelzu/:adminCode', async (req, res) => {
 
 	return respond(res, { ergebnis: true, liste: generateList(topf) }, topf);
 });
-
+*/
 const server = app.listen(port, () => {
 	console.log('listening at port ' + port)
 })
@@ -172,9 +149,9 @@ function generateName() {
 	return names[i];
 }
 
-function generateList(topf) {
-	let list = [];
-	let n = topf.persons.length;
+function generateList(topf: Topf) {
+	const list = [];
+	const n = topf.persons.length;
 	for (let i = 0; i < n; i++) {
 		list.push({
 			name: topf.persons[i].name,
@@ -187,31 +164,11 @@ function generateList(topf) {
 	return list;
 }
 
-function generateWichtel() {
-	let first = 'Al,Am,Ar,El,Em,Fe,Frie,Fro,Ga,La,Lau,Le,Lei,Ma,Mel,Mar,Mor,Rhe,Ro,Ru,Se,Le,Va,Vi'.split(',');
-	let middle = 'ba,be,bi,bo,bu,da,de,di,do,du,fa,fe,fi,fo,fu,ga,ge,gi,go,gu,la,le,li,lo,lu,ma,me,mi,mo,mu,ra,re,ri,ro,ru,va,ve,vi,vo,vu,wa,we,wi,wo,wu'.split(',');
-	let last = 'do,in,is,la,las,lin,mag,na,nas,or,ra,run,tea,us,va,var,vin,wen,wyn,ya'.split(',');
-	if (Math.random() < 0.5) return fix(r(first) + r(middle) + r(last));
-	return fix(r(first) + r(middle) + r(middle) + r(last));
-	function r(list) {
-		return list[Math.floor(Math.random() * list.length)];
-	}
-	function fix(name) {
-		name = name.split('');
-		let lastChar = false;
-		return name.filter(c => (c === lastChar) ? false : lastChar = c).join('');
-	}
-}
-
-function loadNames(filename) {
-	const names = readFileSync(resolve(__dirname, 'data', filename), 'utf8')
+function loadNames(filename: string): string[] {
+	const names = Deno.readTextFileSync(resolve(__dirname, 'data', filename))
 		.split('\n')
 		.filter(l => l.length > 3)
 		.map(l => l.replace(/_/g, ' '));
 	console.log(names.length + ' names found: ' + names.join(', '));
 	return names;
-}
-
-function secureID(id) {
-	return ('' + id).replace(/[^a-zA-Z0-9]+/g, '');
 }
