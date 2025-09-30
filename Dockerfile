@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:22
 
 ENV APP_DIR="/app"
 EXPOSE 8080
