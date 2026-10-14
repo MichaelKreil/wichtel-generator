@@ -68,7 +68,7 @@ export function startPage(theme: string): Html {
 					</label>`,
 				)}
 			</fieldset>
-			<button type="submit">Wichteltopf anlegen</button>
+			<button type="submit" class="sticky">Wichteltopf anlegen</button>
 		</form>`,
 	);
 }

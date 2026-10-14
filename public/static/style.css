@@ -177,8 +177,15 @@ button.small {
 
 .themes {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
 	gap: 6px;
+}
+
+/* keeps the main action reachable while scrolling through the designs */
+button.sticky {
+	position: sticky;
+	bottom: 16px;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
 }
 
 .themes legend {
