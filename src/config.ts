@@ -12,7 +12,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 		port: parseInteger(env.PORT, 8080),
 		baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined,
 		databasePath: env.DATABASE_PATH ?? 'database/wichtel.sqlite',
-		potTtlDays: parseInteger(env.POT_TTL_DAYS, 180),
+		potTtlDays: parseInteger(env.POT_TTL_DAYS, 90),
 	};
 }
 

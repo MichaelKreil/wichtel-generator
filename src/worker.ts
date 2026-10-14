@@ -46,7 +46,7 @@ export default {
 
 	// Daily cron trigger (see wrangler.jsonc): delete inactive pots.
 	async scheduled(_controller: unknown, env: Env) {
-		const ttlDays = Number(env.POT_TTL_DAYS ?? 180);
+		const ttlDays = Number(env.POT_TTL_DAYS ?? 90);
 		const deleted = await setup(env).store.deleteInactiveSince(Date.now() - ttlDays * DAY);
 		console.log(`deleted ${deleted} inactive pots`);
 	},

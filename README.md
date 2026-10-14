@@ -71,7 +71,7 @@ Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel r
 | `PORT`          | `8080`                    |                                                                   |
 | `BASEURL`       | derived from request      | Public URL used in the displayed links, e.g. `https://wichteln.example.org` |
 | `DATABASE_PATH` | `database/wichtel.sqlite` | SQLite file                                                       |
-| `POT_TTL_DAYS`  | `180`                     | Pots without activity are deleted after this many days            |
+| `POT_TTL_DAYS`  | `90`                      | Pots without activity are deleted after this many days            |
 
 ```bash
 docker pull ghcr.io/michaelkreil/wichtel-generator:latest   # published for tags v*

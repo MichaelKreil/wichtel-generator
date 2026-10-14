@@ -21,7 +21,7 @@
 		{ "name": "WRITE_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }
 	],
 	"vars": {
-		"POT_TTL_DAYS": "180"
+		"POT_TTL_DAYS": "90"
 	},
 	"triggers": {
 		"crons": ["17 3 * * *"]
