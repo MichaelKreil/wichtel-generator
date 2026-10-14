@@ -26,8 +26,11 @@
 	"triggers": {
 		"crons": ["17 3 * * *"]
 	},
+	// Only our own console output (errors, cleanup counts). No per-request logs: their URLs would
+	// contain the secret admin and personal links, plus IP addresses.
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"logs": { "enabled": true, "invocation_logs": false }
 	},
 	"routes": [
 		{ "pattern": "wichteltopf.de", "custom_domain": true },
