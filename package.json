@@ -10,8 +10,8 @@
 	"scripts": {
 		"start": "node src/server.ts",
 		"dev": "node --watch src/server.ts",
-		"cf:dev": "wrangler d1 migrations apply wichteltopf --local && wrangler dev",
-		"deploy": "wrangler d1 migrations apply wichteltopf --remote && wrangler deploy",
+		"cf:dev": "wrangler d1 migrations apply DB --local && wrangler dev",
+		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
 		"test": "node --test \"test/**/*.test.ts\"",
 		"test:mobile": "node scripts/mobile-check.ts",
 		"typecheck": "tsc --noEmit",

@@ -54,7 +54,7 @@ One-time setup:
 
 ```bash
 npx wrangler login
-npx wrangler d1 create wichteltopf   # put the returned database_id into wrangler.jsonc
+npx wrangler d1 create wichteltopf-eu --jurisdiction eu   # put the returned database_id into wrangler.jsonc
 npm run deploy                       # applies migrations, then deploys
 ```
 
@@ -62,7 +62,7 @@ Custom domain: once `wichteltopf.de` is active in Cloudflare, enable the `routes
 
 CI deploys automatically on every push to `main`. This needs the repository secrets `CLOUDFLARE_API_TOKEN` (template "Edit Cloudflare Workers", plus permission "D1: Edit") and `CLOUDFLARE_ACCOUNT_ID`.
 
-Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel restore wichteltopf --timestamp=…` (restore the DB to a point in time).
+Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel restore DB --timestamp=…` (restore the DB to a point in time).
 
 ## Self-hosting with Node.js / Docker (alternative)
 

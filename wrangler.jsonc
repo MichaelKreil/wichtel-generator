@@ -9,9 +9,9 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "wichteltopf",
-			// from `npx wrangler d1 create wichteltopf`
-			"database_id": "1c47009a-ad6d-4ebd-814f-a131f4806191",
+			"database_name": "wichteltopf-eu",
+			// EU jurisdiction: data stays in the EU. Created with `npx wrangler d1 create wichteltopf-eu --jurisdiction eu`
+			"database_id": "cf6ca818-43d9-443d-a1ce-8fae6f327021",
 			"migrations_dir": "migrations"
 		}
 	],
