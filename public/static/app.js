@@ -5,10 +5,20 @@ for (const radio of document.querySelectorAll('input[name="theme"]')) {
 	});
 }
 
+// Share buttons for links, only where the device can share (mostly phones)
+for (const button of document.querySelectorAll('[data-share]')) {
+	if (!navigator.share) continue;
+	button.hidden = false;
+	button.addEventListener('click', () => {
+		const url = button.closest('.copy').querySelector('input').value;
+		navigator.share({ title: 'Wichteltopf', text: button.dataset.share, url }).catch(() => {});
+	});
+}
+
 // Copy buttons for links
 for (const button of document.querySelectorAll('[data-copy]')) {
 	button.addEventListener('click', async () => {
-		const input = button.parentElement.querySelector('input');
+		const input = button.closest('.copy').querySelector('input');
 		try {
 			await navigator.clipboard.writeText(input.value);
 			button.textContent = 'Kopiert ✓';

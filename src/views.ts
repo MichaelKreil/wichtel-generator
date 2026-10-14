@@ -36,10 +36,14 @@ function joinNames(names: string[]): string {
 	return `${names.slice(0, -1).join(', ')} und ${names.at(-1)}`;
 }
 
-function copyField(label: string, url: string): Html {
+/** A link with copy button, and a share button (where the device supports it) if `shareText` is given. */
+function copyField(label: string, url: string, shareText?: string): Html {
 	return html`<div class="copy">
 		<label>${label}<input type="text" readonly value="${url}"></label>
-		<button type="button" class="secondary" data-copy>Kopieren</button>
+		<div class="copy-actions">
+			${shareText ? html`<button type="button" data-share="${shareText}" hidden>Teilen</button>` : ''}
+			<button type="button" class="secondary" data-copy>Kopieren</button>
+		</div>
 	</div>`;
 }
 
@@ -101,7 +105,7 @@ export function adminPage(props: AdminPageProps): Html {
 
 		<section>
 			<p>Bitte speichere dir beide Links gut ab.</p>
-			${copyField('Teilnahme-Link: an alle Wichtel verschicken', props.potUrl)}
+			${copyField('Teilnahme-Link: an alle Wichtel verschicken', props.potUrl, 'Wir wichteln! Wirf hier deinen Namen in den Wichteltopf:')}
 			${copyField('Admin-Link: geheim! Nur damit kannst du den Topf verwalten und schließen.', props.adminUrl)}
 		</section>
 
@@ -235,7 +239,7 @@ export function personalPage({ theme, participant, personalUrl, isNew, result }:
 		<p>Verrate ihn niemandem, denn er ist geheim!</p>
 		<h2>Dein persönlicher Link</h2>
 		<p>Speichere dir diesen Link. Damit siehst du jederzeit deinen Codenamen und nach der Auslosung, wen du beschenkst, auch auf einem anderen Gerät.</p>
-		${copyField('Persönlicher Link: nur für dich', personalUrl)}`,
+		${copyField('Persönlicher Link: nur für dich', personalUrl, 'Mein persönlicher Wichtel-Link:')}`,
 	);
 }
 

@@ -16,6 +16,10 @@
 	box-sizing: border-box;
 }
 
+[hidden] {
+	display: none;
+}
+
 html {
 	min-height: 100%;
 }
@@ -224,24 +228,28 @@ button.sticky {
 }
 
 .copy {
-	display: flex;
-	align-items: flex-end;
-	gap: 8px;
-	margin: 0.75rem 0;
+	margin: 1rem 0;
 }
 
 .copy label {
-	flex: 1;
-	min-width: 0;
+	display: block;
 	font-size: 0.95rem;
 }
 
+/* at least 16px, otherwise iOS zooms in when the field is tapped */
 .copy input {
-	font-size: 0.95rem;
-	margin-bottom: 0;
+	font-size: 1rem;
+	font-weight: 400;
+	text-overflow: ellipsis;
 }
 
-.copy button {
+.copy-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.copy-actions button {
 	margin: 0;
 }
 
