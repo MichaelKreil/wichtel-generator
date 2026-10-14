@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CODE_NAMES } from '../src/codenames.ts';
+import { MIXED_LIST } from '../src/codenames.ts';
+
+const CODE_NAMES = MIXED_LIST.names;
+
 import { D1Database } from '../src/db-d1.ts';
 import { Store } from '../src/store.ts';
 import worker from '../src/worker.ts';

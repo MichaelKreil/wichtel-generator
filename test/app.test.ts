@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
 import { createApp } from '../src/app.ts';
-import { CODE_NAMES } from '../src/codenames.ts';
+import { MIXED_LIST } from '../src/codenames.ts';
+
+const CODE_NAMES = MIXED_LIST.names;
+
 import { NodeDatabase } from '../src/db-node.ts';
 import { memoryRateLimiter } from '../src/rate-limit.ts';
 import { Store } from '../src/store.ts';
