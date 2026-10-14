@@ -7,7 +7,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { safeEqual } from './random.ts';
 import type { RateLimiters } from './rate-limit.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
-import { getTheme, randomTheme, themesCss } from './themes.ts';
+import { getTheme, randomTheme } from './themes.ts';
 import {
 	adminPage,
 	errorPage,
@@ -31,7 +31,6 @@ const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 /** The app without static file serving, which is done by Cloudflare or by src/server.ts. */
 export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	const app = new Hono();
-	const css = themesCss();
 
 	/** Public origin, e.g. "https://wichteln.example.org". Behind a proxy, BASEURL should be set. */
 	const origin = (c: Context): string => {
@@ -84,11 +83,6 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	});
 
 	app.get('/healthz', (c) => c.text('ok'));
-
-	app.get('/static/themes.css', (c) => {
-		c.header('Cache-Control', 'public, max-age=86400');
-		return c.body(css, 200, { 'Content-Type': 'text/css; charset=utf-8' });
-	});
 
 	app.get('/', (c) => c.html(startPage(page(c))));
 

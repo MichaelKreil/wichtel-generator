@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
 import { createApp } from '../src/app.ts';
@@ -6,6 +7,7 @@ import { CODE_NAMES } from '../src/codenames.ts';
 import { NodeDatabase } from '../src/db-node.ts';
 import { memoryRateLimiter } from '../src/rate-limit.ts';
 import { Store } from '../src/store.ts';
+import { themesCss } from '../src/themes.ts';
 
 const BASE = 'http://localhost';
 let app: Hono;
@@ -51,7 +53,6 @@ describe('app', () => {
 		assert.equal(res.status, 200);
 		assert.match(await res.text(), /Wichteltopf anlegen/);
 		assert.match(res.headers.get('content-security-policy') ?? '', /default-src 'self'/);
-		assert.match(await (await get('/static/themes.css')).text(), /data-theme="candle"/);
 		assert.equal((await get('/healthz')).status, 200);
 	});
 
@@ -204,5 +205,12 @@ describe('link previews', () => {
 		const pot = await (await get(potPath)).text();
 		assert.ok(pot.includes('<meta property="og:title" content="Mach mit beim Wichteln!">'));
 		assert.ok(pot.includes('<meta name="robots" content="noindex">'));
+	});
+});
+
+describe('themes.css', () => {
+	it('is up to date with src/themes.ts (run `npm run themes`)', () => {
+		const file = readFileSync(new URL('../public/static/themes.css', import.meta.url), 'utf8');
+		assert.equal(file, `${themesCss()}\n`);
 	});
 });

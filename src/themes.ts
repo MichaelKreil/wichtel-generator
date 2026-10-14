@@ -51,7 +51,7 @@ export function randomTheme(): Theme {
 	return pick(THEMES);
 }
 
-/** Per-theme CSS: background images and tone. Served as /static/themes.css. */
+/** Per-theme CSS: background images and tone. Written to public/static/themes.css by `npm run themes`. */
 export function themesCss(): string {
 	return THEMES.map(
 		({ id, dark, align }) =>

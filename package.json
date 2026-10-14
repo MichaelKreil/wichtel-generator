@@ -18,6 +18,7 @@
 		"format": "biome check --write .",
 		"check": "npm run typecheck && npm run lint && npm test",
 		"images": "./scripts/build-images.sh",
+		"themes": "node scripts/build-themes-css.ts",
 		"upgrade": "npx npm-check-updates -u && npm install"
 	},
 	"author": "Michael Kreil",

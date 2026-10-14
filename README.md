@@ -43,7 +43,7 @@ Schema changes go into a new `migrations/NNNN_name.sql` file. Never edit an appl
 
 1. Put the photo into `assets/backgrounds/<id>.jpg`.
 2. Run `npm run images` (requires `cwebp`: `brew install webp`).
-3. Add `{ id, dark, align }` to `src/themes.ts`.
+3. Add `{ id, dark, align }` to `src/themes.ts` and run `npm run themes`.
 
 ## Deployment on Cloudflare (main)
 
