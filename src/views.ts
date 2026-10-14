@@ -44,7 +44,9 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 	<meta property="og:image:width" content="1200">
 	<meta property="og:image:height" content="630">
 	<meta name="twitter:card" content="summary_large_image">
-	<link rel="icon" href="data:,">
+	<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+	<meta name="theme-color" content="#a4161a">
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/themes.css">
 	<script src="/static/app.js" defer></script>

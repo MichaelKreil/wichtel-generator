@@ -32,6 +32,10 @@ app.use(
 	}),
 );
 const rateLimiters = { create: memoryRateLimiter(3, 60_000), write: memoryRateLimiter(30, 60_000) };
+// icons that browsers request from the root (on Cloudflare these are static assets too)
+for (const file of ['/favicon.ico', '/apple-touch-icon.png']) {
+	app.get(file, serveStatic({ path: new URL(`../public${file}`, import.meta.url).pathname }));
+}
 app.route('/', createApp({ store, baseUrl: config.baseUrl, rateLimiters }));
 
 async function cleanup(): Promise<void> {
