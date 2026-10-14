@@ -1,5 +1,6 @@
 import { html } from 'hono/html';
 import type { HtmlEscapedString } from 'hono/utils/html';
+import { CODE_NAME_LISTS, DEFAULT_LIST_ID } from './codenames.ts';
 import { OPERATOR } from './operator.ts';
 import { type Exclusion, MAX_NAME_LENGTH, MIN_PARTICIPANTS, type Participant } from './store.ts';
 import { THEMES } from './themes.ts';
@@ -95,6 +96,19 @@ export function startPage(page: Page): Html {
 		</ol>
 
 		<form method="post" action="/neu">
+			<fieldset class="lists">
+				<legend><h2>Wähle die Codenamen</h2></legend>
+				${CODE_NAME_LISTS.map(
+					(list) => html`<label>
+						<input type="radio" name="codenames" value="${list.id}" ${list.id === DEFAULT_LIST_ID ? 'checked' : ''}>
+						<span>
+							<b>${list.label}</b> <span class="capacity">bis zu ${list.names.length} Personen</span><br>
+							<small>z.&nbsp;B. ${list.names.slice(0, 3).join(', ')}</small>
+						</span>
+					</label>`,
+				)}
+			</fieldset>
+
 			<fieldset class="themes">
 				<legend><h2>Wähle ein Design</h2></legend>
 				${THEMES.map(
@@ -112,6 +126,8 @@ export function startPage(page: Page): Html {
 
 export interface AdminPageProps {
 	page: Page;
+	/** One per code name in the pot's list */
+	maxParticipants: number;
 	potUrl: string;
 	adminUrl: string;
 	adminPath: string;
@@ -155,7 +171,7 @@ export function adminPage(props: AdminPageProps): Html {
 				? html`<h2>Die Ziehung ist abgeschlossen</h2>${resultList(props.result ?? [])}`
 				: html`
 		<section>
-			<h2>Im Topf (${participants.length})</h2>
+			<h2>Im Topf (${participants.length} von max. ${props.maxParticipants})</h2>
 			${
 				participants.length === 0
 					? html`<p>Noch niemand. Verschicke den Teilnahme-Link!</p>`

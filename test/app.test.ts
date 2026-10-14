@@ -3,9 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
 import { createApp } from '../src/app.ts';
-import { MIXED_LIST } from '../src/codenames.ts';
-
-const CODE_NAMES = MIXED_LIST.names;
+import { codeNamesFor, getCodeNameList } from '../src/codenames.ts';
 
 import { NodeDatabase } from '../src/db-node.ts';
 import { memoryRateLimiter } from '../src/rate-limit.ts';
@@ -17,7 +15,7 @@ let app: Hono;
 let store: Store;
 
 beforeEach(() => {
-	store = new Store(new NodeDatabase(':memory:'), CODE_NAMES);
+	store = new Store(new NodeDatabase(':memory:'), codeNamesFor);
 	app = createApp({ store });
 });
 
@@ -156,7 +154,7 @@ describe('app', () => {
 
 describe('rate limiting', () => {
 	it('rejects too many form submissions per IP', async () => {
-		const store = new Store(new NodeDatabase(':memory:'), CODE_NAMES);
+		const store = new Store(new NodeDatabase(':memory:'), codeNamesFor);
 		const rateLimiters = { create: memoryRateLimiter(2, 60_000), write: memoryRateLimiter(30, 60_000) };
 		const app = createApp({ store, rateLimiters, clientIp: (c) => c.req.header('cf-connecting-ip') ?? '' });
 		const create = (ip: string) =>
@@ -197,7 +195,7 @@ describe('errors and caching', () => {
 				first: () => Promise.reject(new Error('db down')),
 				batch: () => Promise.reject(new Error('db down')),
 			},
-			CODE_NAMES,
+			codeNamesFor,
 		);
 		const res = await createApp({ store: failing }).request(`${BASE}/SomePot-abcdefgh`);
 		assert.equal(res.status, 500);
@@ -301,5 +299,32 @@ describe('privacy page', () => {
 		assert.ok(!html.includes('BITTE ERGÄNZEN'));
 		assert.match(await (await get('/')).text(), /<a href="\/datenschutz">Datenschutz<\/a>/);
 		assert.match(await (await get('/Unknown-abcdefgh')).text(), /href="\/datenschutz"/);
+	});
+});
+
+describe('code name lists', () => {
+	it('shows each list with its capacity on the start page', async () => {
+		const html = await (await get('/')).text();
+		assert.match(html, /<b>Sterne<\/b> <span class="capacity">bis zu 38 Personen<\/span>/);
+		assert.match(html, /value="plaetzchen" checked/);
+	});
+
+	it('uses the chosen list for the pot', async () => {
+		const res = await post('/neu', { theme: 'bag', codenames: 'sterne' });
+		const adminPath = new URL(res.headers.get('location') ?? '', BASE).pathname;
+		const potPath = adminPath.replace(/\/admin\/.*/, '');
+		const anna = await join(potPath, 'Anna');
+		const codeName = anna.html.match(/<p class="codename">([^<]+)<\/p>/)?.[1] ?? '';
+		assert.ok(getCodeNameList('sterne')?.names.includes(codeName), codeName);
+		assert.match(await (await get(adminPath)).text(), /Im Topf \(1 von max\. 38\)/);
+	});
+
+	it('falls back to the default list for unknown ids', async () => {
+		const forms: Record<string, string>[] = [{ theme: 'bag', codenames: 'nope' }, { theme: 'bag' }];
+		for (const form of forms) {
+			const res = await post('/neu', form);
+			const potId = new URL(res.headers.get('location') ?? '', BASE).pathname.split('/')[1] ?? '';
+			assert.equal((await store.getPot(potId))?.codeNameList, 'plaetzchen');
+		}
 	});
 });

@@ -9,6 +9,7 @@ const WIDTHS = [320, 390];
 // long names are the hardest case for narrow layouts
 const LONG_NAMES: Demo = {
 	theme: 'snowman',
+	codeNames: 'schauspiel',
 	participants: ['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt', 'Carla Weiß', 'Maximilian von Hohenzollern'],
 	exclusions: [['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt']],
 };
@@ -41,7 +42,7 @@ const audit = `(() => {
 		if (size < 16) problems.push(describe(el) + ': font ' + size + 'px makes iOS zoom in');
 	}
 	// buttons, fields and the design thumbnails; links inside text are exempt
-	for (const el of document.querySelectorAll('button, .button, input:not([type=hidden]):not([type=radio]), select, .themes label')) {
+	for (const el of document.querySelectorAll('button, .button, input:not([type=hidden]):not([type=radio]), select, .themes label, .lists label')) {
 		const box = el.getBoundingClientRect();
 		if (!box.width || getComputedStyle(el).visibility === 'hidden') continue;
 		if (box.height < 44 || box.width < 44) problems.push(describe(el) + ': tap target ' + Math.round(box.width) + 'x' + Math.round(box.height) + 'px');

@@ -2,6 +2,8 @@
 export interface Demo {
 	/** Background theme id from src/themes.ts */
 	theme: string;
+	/** Code name list id from src/codenames.ts */
+	codeNames: string;
 	participants: string[];
 	/** Pairs of participants who must not draw each other */
 	exclusions: [string, string][];
@@ -9,6 +11,7 @@ export interface Demo {
 
 export const DEMO: Demo = {
 	theme: 'snowman',
+	codeNames: 'plaetzchen',
 	participants: ['Anna Schmidt', 'Ben Müller', 'Carla Weiß', 'David Fischer', 'Emma Wagner'],
 	exclusions: [['Anna Schmidt', 'Ben Müller']],
 };

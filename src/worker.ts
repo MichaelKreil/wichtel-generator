@@ -1,7 +1,7 @@
 // Entry point for Cloudflare Workers. Static files in public/ are served by Cloudflare directly.
 import type { Hono } from 'hono';
 import { createApp } from './app.ts';
-import { MIXED_LIST } from './codenames.ts';
+import { codeNamesFor } from './codenames.ts';
 import { type D1Binding, D1Database } from './db-d1.ts';
 import { bindingRateLimiter, type RateLimitBinding } from './rate-limit.ts';
 import { Store } from './store.ts';
@@ -22,7 +22,7 @@ let cached: { env: Env; store: Store; app: Hono } | undefined;
 
 function setup(env: Env) {
 	if (cached?.env !== env) {
-		const store = new Store(new D1Database(env.DB), MIXED_LIST.names);
+		const store = new Store(new D1Database(env.DB), codeNamesFor);
 		const app = createApp({
 			store,
 			baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined,

@@ -489,7 +489,16 @@ const LISTS: CodeNameList[] = [
 export const MIXED_LIST: CodeNameList = {
 	id: 'gemischt',
 	label: 'Alle gemischt',
-	names: [...new Set(LISTS.flatMap((list) => list.names))],
+	// taken from the lists in turn, so the examples show the variety
+	names: [
+		...new Set(
+			Array.from({ length: Math.max(...LISTS.map((list) => list.names.length)) }, (_, i) =>
+				LISTS.map((list) => list.names[i]),
+			)
+				.flat()
+				.filter((name) => name !== undefined),
+		),
+	],
 };
 
 export const CODE_NAME_LISTS: readonly CodeNameList[] = [...LISTS, MIXED_LIST];

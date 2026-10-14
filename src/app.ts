@@ -3,6 +3,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
+import { DEFAULT_LIST_ID, getCodeNameList } from './codenames.ts';
 import { safeEqual } from './random.ts';
 import type { RateLimiters } from './rate-limit.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
@@ -103,7 +104,8 @@ export function createApp({ store, baseUrl, rateLimiters, clientIp = () => '' }:
 	app.post('/neu', async (c) => {
 		const body = await c.req.parseBody();
 		const theme = getTheme(body.theme) ?? randomTheme();
-		const pot = await store.createPot(theme.id);
+		const codeNames = getCodeNameList(body.codenames) ?? getCodeNameList(DEFAULT_LIST_ID);
+		const pot = await store.createPot(theme.id, codeNames?.id ?? DEFAULT_LIST_ID);
 		return c.redirect(`${adminPath(pot)}?neu`, 303);
 	});
 
@@ -222,6 +224,7 @@ export function createApp({ store, baseUrl, rateLimiters, clientIp = () => '' }:
 		return c.html(
 			adminPage({
 				page: page(c, pot.theme),
+				maxParticipants: store.maxParticipants(pot),
 				potUrl: origin(c) + potPath(pot),
 				adminUrl: origin(c) + adminPath(pot),
 				adminPath: adminPath(pot),

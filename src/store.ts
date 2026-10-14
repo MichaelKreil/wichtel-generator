@@ -6,6 +6,8 @@ export interface Pot {
 	id: string;
 	adminToken: string;
 	theme: string;
+	/** Id of the code name list, see src/codenames.ts */
+	codeNameList: string;
 	version: number;
 	createdAt: number;
 	updatedAt: number;
@@ -59,6 +61,7 @@ function toPot(row: Row): Pot {
 		id: row.id as string,
 		adminToken: row.admin_token as string,
 		theme: row.theme as string,
+		codeNameList: row.code_name_list as string,
 		version: row.version as number,
 		createdAt: row.created_at as number,
 		updatedAt: row.updated_at as number,
@@ -99,22 +102,24 @@ export function canDraw(participants: Participant[], exclusions: Exclusion[]): b
  */
 export class Store {
 	readonly #db: Database;
-	readonly #codeNames: readonly string[];
+	readonly #codeNamesFor: (listId: string) => readonly string[];
 	readonly #now: () => number;
 
-	constructor(db: Database, codeNames: readonly string[], now: () => number = Date.now) {
+	/** `codeNamesFor` returns the names of a code name list; its length limits the participants of a pot. */
+	constructor(db: Database, codeNamesFor: (listId: string) => readonly string[], now: () => number = Date.now) {
 		this.#db = db;
-		this.#codeNames = codeNames;
+		this.#codeNamesFor = codeNamesFor;
 		this.#now = now;
 	}
 
-	async createPot(theme: string): Promise<Pot> {
+	async createPot(theme: string, codeNameList: string): Promise<Pot> {
 		for (;;) {
 			const now = this.#now();
 			const pot: Pot = {
 				id: potId(),
 				adminToken: randomToken(24),
 				theme,
+				codeNameList,
 				version: 0,
 				createdAt: now,
 				updatedAt: now,
@@ -122,10 +127,11 @@ export class Store {
 			};
 			const [inserted] = await this.#db.batch([
 				sql(
-					'INSERT OR IGNORE INTO pots (id, admin_token, theme, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+					'INSERT OR IGNORE INTO pots (id, admin_token, theme, code_name_list, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
 					pot.id,
 					pot.adminToken,
 					pot.theme,
+					pot.codeNameList,
 					now,
 					now,
 				),
@@ -137,6 +143,11 @@ export class Store {
 	async getPot(id: string): Promise<Pot | undefined> {
 		const row = await this.#db.first(sql('SELECT * FROM pots WHERE id = ?', id));
 		return row && toPot(row);
+	}
+
+	/** How many people fit into the pot: one per code name. */
+	maxParticipants(pot: Pot): number {
+		return this.#codeNamesFor(pot.codeNameList).length;
 	}
 
 	isAdmin(pot: Pot, token: string): boolean {
@@ -170,7 +181,7 @@ export class Store {
 			}
 
 			const used = new Set(participants.map((p) => p.codeName));
-			const available = this.#codeNames.filter((n) => !used.has(n));
+			const available = this.#codeNamesFor(pot.codeNameList).filter((n) => !used.has(n));
 			if (available.length === 0) return { ok: false, error: 'full' };
 
 			const codeName = pick(available);

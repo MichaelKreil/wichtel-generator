@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { MIXED_LIST } from '../src/codenames.ts';
-
-const CODE_NAMES = MIXED_LIST.names;
+import { codeNamesFor } from '../src/codenames.ts';
 
 import { D1Database } from '../src/db-d1.ts';
 import { Store } from '../src/store.ts';
@@ -43,10 +41,10 @@ describe('worker', () => {
 	it('deletes inactive pots in the scheduled job', async (t) => {
 		t.mock.method(console, 'log', () => {});
 		const env = createEnv();
-		const old = await new Store(new D1Database(env.DB), CODE_NAMES, () => 0).createPot('bag');
-		const recent = await new Store(new D1Database(env.DB), CODE_NAMES).createPot('bag');
+		const old = await new Store(new D1Database(env.DB), codeNamesFor, () => 0).createPot('bag', 'sterne');
+		const recent = await new Store(new D1Database(env.DB), codeNamesFor).createPot('bag', 'sterne');
 		await worker.scheduled({}, env);
-		const store = new Store(new D1Database(env.DB), CODE_NAMES);
+		const store = new Store(new D1Database(env.DB), codeNamesFor);
 		assert.equal(await store.getPot(old.id), undefined);
 		assert.ok(await store.getPot(recent.id));
 	});

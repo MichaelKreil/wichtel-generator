@@ -4,7 +4,7 @@ import { getConnInfo } from '@hono/node-server/conninfo';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { type Context, Hono } from 'hono';
 import { createApp } from './app.ts';
-import { MIXED_LIST } from './codenames.ts';
+import { codeNamesFor } from './codenames.ts';
 import { loadConfig } from './config.ts';
 import { NodeDatabase } from './db-node.ts';
 import { memoryRateLimiter } from './rate-limit.ts';
@@ -14,7 +14,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 const config = loadConfig();
 const db = new NodeDatabase(config.databasePath);
-const store = new Store(db, MIXED_LIST.names);
+const store = new Store(db, codeNamesFor);
 
 const app = new Hono();
 // the app sets its own security headers; this covers the static files, too (like public/_headers on Cloudflare)

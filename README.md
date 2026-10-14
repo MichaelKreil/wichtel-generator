@@ -35,7 +35,7 @@ npm run format   # auto-format with Biome
 | `src/draw.ts`         | The drawing algorithm                                         |
 | `src/views.ts`        | Server-rendered HTML                                          |
 | `src/themes.ts`       | Background themes                                             |
-| `src/codenames.ts`    | Pool of code names (also limits the participants per pot)     |
+| `src/codenames.ts`    | Code name lists to choose from; a list's size limits the pot |
 | `public/static/`      | CSS, JS, generated images                                     |
 | `assets/backgrounds/` | Source photos for the themes                                  |
 

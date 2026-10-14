@@ -207,6 +207,49 @@ button.small {
 	gap: 6px;
 }
 
+.lists {
+	display: grid;
+	gap: 6px;
+}
+
+.lists legend {
+	grid-column: 1 / -1;
+}
+
+.lists label {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	min-height: 44px;
+	padding: 8px 12px;
+	border: 2px solid transparent;
+	border-radius: var(--radius);
+	background: var(--field);
+	cursor: pointer;
+}
+
+.lists label:hover {
+	background: var(--field-hover);
+}
+
+.lists label:has(input:checked) {
+	border-color: var(--fg);
+}
+
+.lists input {
+	margin: 4px 0 0;
+	accent-color: var(--fg);
+}
+
+.lists small {
+	opacity: 0.8;
+}
+
+.capacity {
+	white-space: nowrap;
+	font-size: 0.9rem;
+}
+
 /* keeps the main action reachable while scrolling through the designs */
 button.sticky {
 	position: sticky;

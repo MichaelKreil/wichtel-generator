@@ -16,8 +16,8 @@ const drivers: Record<string, () => Database> = {
 for (const [driver, createDb] of Object.entries(drivers)) {
 	describe(`Store (${driver})`, () => {
 		async function setup(now = () => 1000) {
-			const store = new Store(createDb(), CODE_NAMES, now);
-			const pot = await store.createPot('bag');
+			const store = new Store(createDb(), () => CODE_NAMES, now);
+			const pot = await store.createPot('bag', 'test');
 			const join = async (name: string, token?: string) => {
 				const result = await store.join(pot, name, token);
 				assert.ok(result.ok, `join ${name}`);
@@ -71,7 +71,7 @@ for (const [driver, createDb] of Object.entries(drivers)) {
 		it('ignores exclusions with participants from other pots', async () => {
 			const { store, pot, join } = await setup();
 			const a = await join('A');
-			const other = await store.createPot('bag');
+			const other = await store.createPot('bag', 'test');
 			const result = await store.join(other, 'X', undefined);
 			assert.ok(result.ok);
 			await store.addExclusion(pot, a.id, result.participant.id);
