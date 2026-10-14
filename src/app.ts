@@ -8,7 +8,16 @@ import { safeEqual } from './random.ts';
 import type { RateLimiters } from './rate-limit.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
 import { getTheme, randomTheme, themesCss } from './themes.ts';
-import { adminPage, errorPage, personalPage, potPage, type ResultRow, resultPage, startPage } from './views.ts';
+import {
+	adminPage,
+	errorPage,
+	type Page,
+	personalPage,
+	potPage,
+	type ResultRow,
+	resultPage,
+	startPage,
+} from './views.ts';
 
 export interface AppOptions {
 	store: Store;
@@ -31,6 +40,16 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		const proto = c.req.header('x-forwarded-proto') ?? url.protocol.replace(':', '');
 		return `${proto}://${c.req.header('host') ?? url.host}`;
 	};
+	const page = (c: Context, theme: string = randomTheme().id): Page => ({ theme, origin: origin(c) });
+	const notFound = (c: Context) =>
+		c.html(
+			errorPage(
+				page(c),
+				'Seite nicht gefunden',
+				'Hast du den richtigen Link geöffnet? Alte Wichteltöpfe werden nach einiger Zeit gelöscht.',
+			),
+			404,
+		);
 
 	app.use(
 		secureHeaders({
@@ -59,12 +78,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		const limiter = c.req.path === '/neu' ? rateLimiters.create : rateLimiters.write;
 		if (await limiter(ip)) return next();
 		return c.html(
-			errorPage(
-				randomTheme().id,
-				'Zu viele Anfragen',
-				'Bitte warte eine Minute und versuche es dann noch einmal.',
-				false,
-			),
+			errorPage(page(c), 'Zu viele Anfragen', 'Bitte warte eine Minute und versuche es dann noch einmal.', false),
 			429,
 		);
 	});
@@ -76,7 +90,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		return c.body(css, 200, { 'Content-Type': 'text/css; charset=utf-8' });
 	});
 
-	app.get('/', (c) => c.html(startPage(randomTheme().id)));
+	app.get('/', (c) => c.html(startPage(page(c))));
 
 	app.post('/neu', async (c) => {
 		const body = await c.req.parseBody();
@@ -107,8 +121,8 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		const participants = await store.listParticipants(pot.id);
 		const me = findByToken(participants, getCookie(c, cookieName(pot)));
 		if (me) return c.redirect(personalPath(pot, me), 303);
-		if (pot.closedAt !== null) return c.html(resultPage(pot.theme, results(participants)));
-		return c.html(potPage({ theme: pot.theme, potPath: potPath(pot), participants }));
+		if (pot.closedAt !== null) return c.html(resultPage(page(c, pot.theme), results(participants)));
+		return c.html(potPage({ page: page(c, pot.theme), potPath: potPath(pot), participants }));
 	});
 
 	app.get('/:pot/ich/:token', async (c) => {
@@ -120,7 +134,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		rememberParticipant(c, pot, me);
 		return c.html(
 			personalPage({
-				theme: pot.theme,
+				page: page(c, pot.theme),
 				participant: me,
 				personalUrl: origin(c) + personalPath(pot, me),
 				isNew: c.req.query('neu') !== undefined,
@@ -137,7 +151,12 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		const name = cleanName((await c.req.parseBody()).name);
 		const showError = async (error: string) =>
 			c.html(
-				potPage({ theme: pot.theme, potPath: potPath(pot), participants: await store.listParticipants(pot.id), error }),
+				potPage({
+					page: page(c, pot.theme),
+					potPath: potPath(pot),
+					participants: await store.listParticipants(pot.id),
+					error,
+				}),
 				400,
 			);
 		if (name.length < 2) return showError('Bitte gib deinen Namen ein.');
@@ -179,7 +198,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		]);
 		return c.html(
 			adminPage({
-				theme: pot.theme,
+				page: page(c, pot.theme),
 				potUrl: origin(c) + potPath(pot),
 				adminUrl: origin(c) + adminPath(pot),
 				adminPath: adminPath(pot),
@@ -235,12 +254,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		if (error instanceof HTTPException) return error.getResponse();
 		console.error(error);
 		return c.html(
-			errorPage(
-				randomTheme().id,
-				'Da ist etwas schiefgelaufen',
-				'Bitte versuche es in ein paar Minuten noch einmal.',
-				false,
-			),
+			errorPage(page(c), 'Da ist etwas schiefgelaufen', 'Bitte versuche es in ein paar Minuten noch einmal.', false),
 			500,
 		);
 	});
@@ -265,15 +279,4 @@ function personalPath(pot: Pot, participant: Participant): string {
 
 function adminPath(pot: Pot): string {
 	return `/${pot.id}/admin/${pot.adminToken}`;
-}
-
-function notFound(c: Context) {
-	return c.html(
-		errorPage(
-			randomTheme().id,
-			'Seite nicht gefunden',
-			'Hast du den richtigen Link geöffnet? Alte Wichteltöpfe werden nach einiger Zeit gelöscht.',
-		),
-		404,
-	);
 }

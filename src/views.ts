@@ -10,7 +10,23 @@ export interface ResultRow {
 	receiver: string;
 }
 
-function layout(theme: string, title: string, content: Html): Html {
+/** What every page needs: the background theme, and the public origin for absolute URLs. */
+export interface Page {
+	theme: string;
+	origin: string;
+}
+
+interface LayoutOptions {
+	/** Shown in link previews (WhatsApp, Signal, …) and search results. */
+	description?: string;
+	/** Only the start page should appear in search engines. */
+	index?: boolean;
+}
+
+const DEFAULT_DESCRIPTION = 'Kostenloser Online-Wichteltopf: Namen eintragen, geheim auslosen, fertig.';
+
+function layout(page: Page, title: string, content: Html, options: LayoutOptions = {}): Html {
+	const description = options.description ?? DEFAULT_DESCRIPTION;
 	return html`<!doctype html>
 <html lang="de">
 <head>
@@ -18,12 +34,22 @@ function layout(theme: string, title: string, content: Html): Html {
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
 	<title>${title} · Wichtel-Generator</title>
+	<meta name="description" content="${description}">
+	${options.index ? '' : html`<meta name="robots" content="noindex">`}
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="Wichtel-Generator">
+	<meta property="og:title" content="${title}">
+	<meta property="og:description" content="${description}">
+	<meta property="og:image" content="${page.origin}/static/og.jpg">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta name="twitter:card" content="summary_large_image">
 	<link rel="icon" href="data:,">
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/themes.css">
 	<script src="/static/app.js" defer></script>
 </head>
-<body data-theme="${theme}">
+<body data-theme="${page.theme}">
 	<main>${content}</main>
 	<canvas id="snow" aria-hidden="true"></canvas>
 </body>
@@ -47,9 +73,9 @@ function copyField(label: string, url: string, shareText?: string): Html {
 	</div>`;
 }
 
-export function startPage(theme: string): Html {
+export function startPage(page: Page): Html {
 	return layout(
-		theme,
+		page,
 		'Wichteltopf anlegen',
 		html`<h1>Wichtel-Generator</h1>
 		<p>Hier kannst du kostenlos einen Online-Wichteltopf einrichten.</p>
@@ -67,18 +93,19 @@ export function startPage(theme: string): Html {
 				<legend><h2>Wähle ein Design</h2></legend>
 				${THEMES.map(
 					(t) => html`<label>
-						<input type="radio" name="theme" value="${t.id}" ${t.id === theme ? 'checked' : ''}>
+						<input type="radio" name="theme" value="${t.id}" ${t.id === page.theme ? 'checked' : ''}>
 						<img src="/static/img/thumb/${t.id}.webp" alt="Design ${t.id}" width="384" height="256" loading="lazy">
 					</label>`,
 				)}
 			</fieldset>
 			<button type="submit" class="sticky">Wichteltopf anlegen</button>
 		</form>`,
+		{ index: true },
 	);
 }
 
 export interface AdminPageProps {
-	theme: string;
+	page: Page;
 	potUrl: string;
 	adminUrl: string;
 	adminPath: string;
@@ -98,7 +125,7 @@ export function adminPage(props: AdminPageProps): Html {
 		participants.map((p, i) => html`<option value="${p.id}" ${i === selected ? 'selected' : ''}>${p.name}</option>`);
 
 	return layout(
-		props.theme,
+		props.page,
 		'Admin',
 		html`<h1>${props.isNew ? 'Wichteltopf angelegt 🎉' : 'Dein Wichteltopf'}</h1>
 		${props.error ? html`<p class="error" role="alert">${props.error}</p>` : ''}
@@ -181,17 +208,17 @@ export function adminPage(props: AdminPageProps): Html {
 }
 
 export interface PotPageProps {
-	theme: string;
+	page: Page;
 	potPath: string;
 	participants: Participant[];
 	error?: string;
 }
 
-export function potPage({ theme, potPath, participants, error }: PotPageProps): Html {
+export function potPage({ page, potPath, participants, error }: PotPageProps): Html {
 	const names = participants.map((p) => p.name);
 	return layout(
-		theme,
-		'Wichteltopf',
+		page,
+		'Mach mit beim Wichteln!',
 		html`<h1>Wichteltopf</h1>
 		${
 			names.length === 0
@@ -204,11 +231,12 @@ export function potPage({ theme, potPath, participants, error }: PotPageProps): 
 			<input type="text" id="name" name="name" maxlength="${MAX_NAME_LENGTH}" autocomplete="name" required autofocus>
 			<button type="submit">Mitmachen</button>
 		</form>`,
+		{ description: 'Wirf deinen Namen in den Wichteltopf und bekomme deinen geheimen Codenamen.' },
 	);
 }
 
 export interface PersonalPageProps {
-	theme: string;
+	page: Page;
 	participant: Participant;
 	personalUrl: string;
 	isNew: boolean;
@@ -217,11 +245,11 @@ export interface PersonalPageProps {
 }
 
 /** A participant's own page, reachable via their personal link from any device. */
-export function personalPage({ theme, participant, personalUrl, isNew, result }: PersonalPageProps): Html {
+export function personalPage({ page, participant, personalUrl, isNew, result }: PersonalPageProps): Html {
 	if (result) {
 		const mine = result.find((r) => r.codeName === participant.codeName);
 		return layout(
-			theme,
+			page,
 			'Ergebnis',
 			html`<h1>Die Ziehung ist abgeschlossen</h1>
 			<p>Hallo ${participant.name}, dein geheimer Codename ist <b>${participant.codeName}</b>.</p>
@@ -231,7 +259,7 @@ export function personalPage({ theme, participant, personalUrl, isNew, result }:
 		);
 	}
 	return layout(
-		theme,
+		page,
 		'Du bist dabei',
 		html`<h1>${isNew ? 'Schön, dass du mitmachst!' : 'Du bist dabei'}</h1>
 		<p>Du bist als <b>${participant.name}</b> im Topf. Dein geheimer Codename lautet:</p>
@@ -252,9 +280,9 @@ function resultList(rows: ResultRow[], myCodeName?: string): Html {
 	</ul>`;
 }
 
-export function resultPage(theme: string, rows: ResultRow[]): Html {
+export function resultPage(page: Page, rows: ResultRow[]): Html {
 	return layout(
-		theme,
+		page,
 		'Ergebnis',
 		html`<h1>Die Ziehung ist abgeschlossen</h1>
 		<p>Suche deinen geheimen Codenamen in der Liste, oder öffne deinen persönlichen Link.</p>
@@ -262,9 +290,9 @@ export function resultPage(theme: string, rows: ResultRow[]): Html {
 	);
 }
 
-export function errorPage(theme: string, title: string, text: string, offerNewPot = true): Html {
+export function errorPage(page: Page, title: string, text: string, offerNewPot = true): Html {
 	return layout(
-		theme,
+		page,
 		title,
 		html`<h1>${title}</h1>
 		<p>${text}</p>

@@ -193,3 +193,16 @@ describe('errors and caching', () => {
 		assert.equal(res.headers.get('cache-control'), 'no-store');
 	});
 });
+
+describe('link previews', () => {
+	it('has preview tags, and only the start page may be indexed', async () => {
+		const start = await (await get('/')).text();
+		assert.ok(start.includes('<meta property="og:image" content="http://localhost/static/og.jpg">'));
+		assert.ok(!start.includes('noindex'));
+
+		const { potPath } = await createPot();
+		const pot = await (await get(potPath)).text();
+		assert.ok(pot.includes('<meta property="og:title" content="Mach mit beim Wichteln!">'));
+		assert.ok(pot.includes('<meta name="robots" content="noindex">'));
+	});
+});
