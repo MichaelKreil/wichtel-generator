@@ -229,7 +229,7 @@ export function potPage({ page, potPath, participants, error }: PotPageProps): H
 		}
 		<form method="post" action="${potPath}">
 			${error ? html`<p class="error" role="alert">${error}</p>` : ''}
-			<label for="name"><h2>Dein Vor- und Nachname</h2></label>
+			<h2><label for="name">Dein Vor- und Nachname</label></h2>
 			<input type="text" id="name" name="name" maxlength="${MAX_NAME_LENGTH}" autocomplete="name" required>
 			<button type="submit">Mitmachen</button>
 		</form>`,
