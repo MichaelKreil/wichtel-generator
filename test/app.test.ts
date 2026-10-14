@@ -168,3 +168,28 @@ describe('rate limiting', () => {
 		assert.ok(await limiter('a'));
 	});
 });
+
+describe('errors and caching', () => {
+	it('marks pages as not cacheable', async () => {
+		const res = await get('/');
+		assert.equal(res.headers.get('cache-control'), 'no-store');
+		const { adminPath } = await createPot();
+		assert.equal((await get(adminPath)).headers.get('cache-control'), 'no-store');
+	});
+
+	it('shows a friendly page on unexpected errors', async (t) => {
+		t.mock.method(console, 'error', () => {});
+		const failing = new Store(
+			{
+				all: () => Promise.reject(new Error('db down')),
+				first: () => Promise.reject(new Error('db down')),
+				batch: () => Promise.reject(new Error('db down')),
+			},
+			CODE_NAMES,
+		);
+		const res = await createApp({ store: failing }).request(`${BASE}/SomePot-abcdefgh`);
+		assert.equal(res.status, 500);
+		assert.match(await res.text(), /Da ist etwas schiefgelaufen/);
+		assert.equal(res.headers.get('cache-control'), 'no-store');
+	});
+});

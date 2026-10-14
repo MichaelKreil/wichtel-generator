@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { getCookie, setCookie } from 'hono/cookie';
 import { csrf } from 'hono/csrf';
+import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
 import { safeEqual } from './random.ts';
 import type { RateLimiters } from './rate-limit.ts';
@@ -46,6 +47,11 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	);
 	app.use(csrf({ origin: (requestOrigin, c) => requestOrigin === origin(c) }));
 	app.use(bodyLimit({ maxSize: 16 * 1024 }));
+	// Pages contain names, code names and admin links: never store them in any cache.
+	app.use(async (c, next) => {
+		await next();
+		if (c.res.headers.get('Content-Type')?.startsWith('text/html')) c.header('Cache-Control', 'no-store');
+	});
 	app.use(async (c, next) => {
 		if (c.req.method !== 'POST' || !rateLimiters) return next();
 		// Cloudflare sets cf-connecting-ip; behind other proxies x-forwarded-for
@@ -224,6 +230,20 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	app.route('/:pot/admin/:token', admin);
 
 	app.notFound(notFound);
+	app.onError((error, c) => {
+		// intended HTTP errors (e.g. 403 from the CSRF check) keep their response
+		if (error instanceof HTTPException) return error.getResponse();
+		console.error(error);
+		return c.html(
+			errorPage(
+				randomTheme().id,
+				'Da ist etwas schiefgelaufen',
+				'Bitte versuche es in ein paar Minuten noch einmal.',
+				false,
+			),
+			500,
+		);
+	});
 
 	return app;
 }
