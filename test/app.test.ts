@@ -137,9 +137,17 @@ describe('app', () => {
 	});
 
 	it('rejects cross-site form posts', async () => {
-		const { potPath } = await createPot();
-		const res = await post(potPath, { name: 'Mallory' }, { Origin: 'https://evil.example' });
-		assert.equal(res.status, 403);
+		const { potPath, adminPath } = await createPot();
+		assert.equal((await post(potPath, { name: 'Mallory' }, { Origin: 'https://evil.example' })).status, 403);
+		// Sec-Fetch-Site wins over a matching Origin
+		assert.equal((await post(potPath, { name: 'Mallory' }, { 'Sec-Fetch-Site': 'cross-site' })).status, 403);
+		assert.equal((await post(potPath, { name: 'Anna' }, { 'Sec-Fetch-Site': 'same-origin' })).status, 303);
+		// neither header, and no form body
+		const bare = await app.request(`${BASE}${adminPath}/schliessen`, {
+			method: 'POST',
+			headers: { Host: 'localhost' },
+		});
+		assert.equal(bare.status, 403);
 	});
 });
 

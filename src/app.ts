@@ -1,7 +1,6 @@
 import { type Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
 import { safeEqual } from './random.ts';
@@ -63,7 +62,18 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 			referrerPolicy: 'no-referrer',
 		}),
 	);
-	app.use(csrf({ origin: (requestOrigin, c) => requestOrigin === origin(c) }));
+	// CSRF protection: every form submission must come from our own pages. Browsers send Sec-Fetch-Site,
+	// older ones at least Origin. Requests with neither are rejected.
+	app.use(async (c, next) => {
+		if (c.req.method === 'GET' || c.req.method === 'HEAD') return next();
+		const site = c.req.header('sec-fetch-site');
+		const sameOrigin = site ? site === 'same-origin' : c.req.header('origin') === origin(c);
+		if (sameOrigin) return next();
+		return c.html(
+			messagePage(page(c), 'Anfrage abgelehnt', 'Bitte benutze die Formulare auf dieser Seite.', false),
+			403,
+		);
+	});
 	app.use(bodyLimit({ maxSize: 16 * 1024 }));
 	// Pages contain names, code names and admin links: never store them in any cache.
 	app.use(async (c, next) => {
