@@ -1,11 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { serveStatic } from '@hono/node-server/serve-static';
 import { type Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { getCookie, setCookie } from 'hono/cookie';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
-import { cleanName, type Participant, type Pot, type Store } from './store.ts';
+import { safeEqual } from './random.ts';
+import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
 import { getTheme, randomTheme, themesCss } from './themes.ts';
 import { adminPage, errorPage, joinedPage, potPage, type ResultRow, resultPage, startPage } from './views.ts';
 
@@ -16,14 +15,7 @@ export interface AppOptions {
 
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
-export function loadCodeNames(path = new URL('../data/codenames.txt', import.meta.url)): string[] {
-	const names = readFileSync(path, 'utf8')
-		.split('\n')
-		.map((line) => line.trim())
-		.filter(Boolean);
-	return [...new Set(names)];
-}
-
+/** The app without static file serving, which is done by Cloudflare or by src/server.ts. */
 export function createApp({ store, baseUrl }: AppOptions): Hono {
 	const app = new Hono();
 	const css = themesCss();
@@ -58,58 +50,47 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 		c.header('Cache-Control', 'public, max-age=86400');
 		return c.body(css, 200, { 'Content-Type': 'text/css; charset=utf-8' });
 	});
-	app.use(
-		'/static/*',
-		serveStatic({
-			root: new URL('../public', import.meta.url).pathname,
-			rewriteRequestPath: (path) => path.replace(/^\/static/, ''),
-			onFound: (_path, c) => {
-				c.header('Cache-Control', 'public, max-age=86400');
-			},
-		}),
-	);
 
 	app.get('/', (c) => c.html(startPage(randomTheme().id)));
 
 	app.post('/neu', async (c) => {
 		const body = await c.req.parseBody();
 		const theme = getTheme(body.theme) ?? randomTheme();
-		const pot = store.createPot(theme.id);
+		const pot = await store.createPot(theme.id);
 		return c.redirect(`${adminPath(pot)}?neu`, 303);
 	});
 
 	// --- participants ---
 
 	const cookieName = (pot: Pot) => `wichtel_${pot.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
-	const currentParticipant = (c: Context, pot: Pot): Participant | undefined => {
+	const currentParticipant = (c: Context, pot: Pot, participants: Participant[]): Participant | undefined => {
 		const token = getCookie(c, cookieName(pot));
-		return token ? store.listParticipants(pot.id).find((p) => p.token === token) : undefined;
+		return token ? participants.find((p) => safeEqual(p.token, token)) : undefined;
 	};
 
-	app.get('/:pot', (c) => {
-		const pot = store.getPot(c.req.param('pot'));
+	app.get('/:pot', async (c) => {
+		const pot = await store.getPot(c.req.param('pot'));
 		if (!pot) return notFound(c);
-		const me = currentParticipant(c, pot);
-		if (pot.closedAt !== null) return c.html(resultPage(pot.theme, results(pot), me));
-		return c.html(
-			potPage({ theme: pot.theme, potPath: potPath(pot), participants: store.listParticipants(pot.id), me }),
-		);
+		const participants = await store.listParticipants(pot.id);
+		const me = currentParticipant(c, pot, participants);
+		if (pot.closedAt !== null) return c.html(resultPage(pot.theme, results(participants), me));
+		return c.html(potPage({ theme: pot.theme, potPath: potPath(pot), participants, me }));
 	});
 
 	app.post('/:pot', async (c) => {
-		const pot = store.getPot(c.req.param('pot'));
+		const pot = await store.getPot(c.req.param('pot'));
 		if (!pot) return notFound(c);
 		if (pot.closedAt !== null) return c.redirect(potPath(pot), 303);
 
 		const name = cleanName((await c.req.parseBody()).name);
-		const showError = (error: string) =>
+		const showError = async (error: string) =>
 			c.html(
-				potPage({ theme: pot.theme, potPath: potPath(pot), participants: store.listParticipants(pot.id), error }),
+				potPage({ theme: pot.theme, potPath: potPath(pot), participants: await store.listParticipants(pot.id), error }),
 				400,
 			);
 		if (name.length < 2) return showError('Bitte gib deinen Namen ein.');
 
-		const result = store.join(pot, name, getCookie(c, cookieName(pot)));
+		const result = await store.join(pot, name, getCookie(c, cookieName(pot)));
 		if (!result.ok) {
 			switch (result.error) {
 				case 'closed':
@@ -138,14 +119,17 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 	const admin = new Hono<{ Variables: { pot: Pot } }>();
 
 	admin.use(async (c, next) => {
-		const pot = store.getPot(c.req.param('pot') ?? '');
+		const pot = await store.getPot(c.req.param('pot') ?? '');
 		if (!pot || !store.isAdmin(pot, c.req.param('token') ?? '')) return notFound(c);
 		c.set('pot', pot);
 		await next();
 	});
 
-	const renderAdmin = (c: Context, pot: Pot, error?: string) => {
-		const participants = store.listParticipants(pot.id);
+	const renderAdmin = async (c: Context, pot: Pot, error?: string) => {
+		const [participants, exclusions] = await Promise.all([
+			store.listParticipants(pot.id),
+			store.listExclusions(pot.id),
+		]);
 		return c.html(
 			adminPage({
 				theme: pot.theme,
@@ -155,10 +139,10 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 				isNew: c.req.query('neu') !== undefined,
 				closed: pot.closedAt !== null,
 				participants,
-				exclusions: store.listExclusions(pot.id),
-				drawPossible: store.canDraw(pot.id),
+				exclusions,
+				drawPossible: canDraw(participants, exclusions),
 				error,
-				result: pot.closedAt !== null ? results(pot) : undefined,
+				result: pot.closedAt !== null ? results(participants) : undefined,
 			}),
 			error ? 400 : 200,
 		);
@@ -168,24 +152,24 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 
 	admin.post('/entfernen', async (c) => {
 		const body = await c.req.parseBody();
-		store.removeParticipant(c.var.pot, Number(body.participant));
+		await store.removeParticipant(c.var.pot, Number(body.participant));
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
 	admin.post('/ausschluss', async (c) => {
 		const body = await c.req.parseBody();
-		store.addExclusion(c.var.pot, Number(body.a), Number(body.b));
+		await store.addExclusion(c.var.pot, Number(body.a), Number(body.b));
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
 	admin.post('/ausschluss-entfernen', async (c) => {
 		const body = await c.req.parseBody();
-		store.removeExclusion(c.var.pot, Number(body.a), Number(body.b));
+		await store.removeExclusion(c.var.pot, Number(body.a), Number(body.b));
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
-	admin.post('/schliessen', (c) => {
-		const result = store.closePot(c.var.pot);
+	admin.post('/schliessen', async (c) => {
+		const result = await store.closePot(c.var.pot.id);
 		if (!result.ok && result.error !== 'closed') {
 			const message =
 				result.error === 'too-few'
@@ -200,15 +184,14 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 
 	app.notFound(notFound);
 
-	function results(pot: Pot): ResultRow[] {
-		const participants = store.listParticipants(pot.id);
-		const nameOf = new Map(participants.map((p) => [p.id, p.name]));
-		return participants
-			.map((p) => ({ codeName: p.codeName, receiver: nameOf.get(p.receiverId ?? -1) ?? '?' }))
-			.sort((a, b) => a.codeName.localeCompare(b.codeName, 'de'));
-	}
-
 	return app;
+}
+
+function results(participants: Participant[]): ResultRow[] {
+	const nameOf = new Map(participants.map((p) => [p.id, p.name]));
+	return participants
+		.map((p) => ({ codeName: p.codeName, receiver: nameOf.get(p.receiverId ?? -1) ?? '?' }))
+		.sort((a, b) => a.codeName.localeCompare(b.codeName, 'de'));
 }
 
 function potPath(pot: Pot): string {

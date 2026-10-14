@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
 COPY public ./public
-COPY data ./data
+COPY migrations ./migrations
 RUN mkdir -p /app/database && chown node:node /app/database
 USER node
 VOLUME /app/database

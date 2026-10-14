@@ -1,14 +1,12 @@
-import { timingSafeEqual } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { type Database, isUniqueViolation, type Row, sql } from './db.ts';
 import { draw, type IsAllowed, isDrawPossible } from './draw.ts';
-import { pick, potId, randomToken } from './random.ts';
+import { pick, potId, randomToken, safeEqual } from './random.ts';
 
 export interface Pot {
 	id: string;
 	adminToken: string;
 	theme: string;
+	version: number;
 	createdAt: number;
 	updatedAt: number;
 	closedAt: number | null;
@@ -36,42 +34,8 @@ export type CloseResult = { ok: true } | { ok: false; error: 'closed' | 'too-few
 export const MIN_PARTICIPANTS = 3;
 export const MAX_NAME_LENGTH = 100;
 
-const SCHEMA = `
-	PRAGMA journal_mode = WAL;
-	PRAGMA foreign_keys = ON;
-
-	CREATE TABLE IF NOT EXISTS pots (
-		id          TEXT PRIMARY KEY,
-		admin_token TEXT NOT NULL,
-		theme       TEXT NOT NULL,
-		created_at  INTEGER NOT NULL,
-		updated_at  INTEGER NOT NULL,
-		closed_at   INTEGER
-	);
-
-	CREATE TABLE IF NOT EXISTS participants (
-		id          INTEGER PRIMARY KEY,
-		pot_id      TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
-		name        TEXT NOT NULL,
-		name_key    TEXT NOT NULL,
-		code_name   TEXT NOT NULL,
-		token       TEXT NOT NULL,
-		receiver_id INTEGER REFERENCES participants(id),
-		created_at  INTEGER NOT NULL,
-		UNIQUE (pot_id, name_key),
-		UNIQUE (pot_id, code_name)
-	);
-
-	CREATE TABLE IF NOT EXISTS exclusions (
-		pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
-		a      INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-		b      INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-		PRIMARY KEY (pot_id, a, b),
-		CHECK (a < b)
-	);
-
-	CREATE INDEX IF NOT EXISTS pots_updated_at ON pots(updated_at);
-`;
+/** Concurrent requests are resolved by retrying; this many attempts is plenty. */
+const MAX_ATTEMPTS = 5;
 
 /** Normalized name used to detect duplicates ("anna  müller" = "Anna Müller"). */
 export function nameKey(name: string): string {
@@ -87,201 +51,249 @@ export function cleanName(input: unknown): string {
 		.slice(0, MAX_NAME_LENGTH);
 }
 
+// Guard for writes: only change pots that are still open.
+const IS_OPEN = 'EXISTS (SELECT 1 FROM pots WHERE id = ? AND closed_at IS NULL)';
+
+function toPot(row: Row): Pot {
+	return {
+		id: row.id as string,
+		adminToken: row.admin_token as string,
+		theme: row.theme as string,
+		version: row.version as number,
+		createdAt: row.created_at as number,
+		updatedAt: row.updated_at as number,
+		closedAt: row.closed_at as number | null,
+	};
+}
+
+function toParticipant(row: Row): Participant {
+	return {
+		id: row.id as number,
+		name: row.name as string,
+		codeName: row.code_name as string,
+		token: row.token as string,
+		receiverId: row.receiver_id as number | null,
+	};
+}
+
+/** Translates exclusions into a check on participant indexes, as used by draw(). */
+function isAllowedFor(participants: Participant[], exclusions: Exclusion[]): IsAllowed {
+	const index = new Map(participants.map((p, i) => [p.id, i]));
+	const forbidden = new Set(
+		exclusions.flatMap(({ a, b }) => [`${index.get(a)}>${index.get(b)}`, `${index.get(b)}>${index.get(a)}`]),
+	);
+	return (giver, receiver) => !forbidden.has(`${giver}>${receiver}`);
+}
+
+/** True if the participants can be drawn, respecting all exclusions. */
+export function canDraw(participants: Participant[], exclusions: Exclusion[]): boolean {
+	return (
+		participants.length >= MIN_PARTICIPANTS &&
+		isDrawPossible(participants.length, isAllowedFor(participants, exclusions))
+	);
+}
+
 /**
- * All persistence. node:sqlite is synchronous, so every method runs atomically with respect to other requests.
+ * All persistence. Requests may run concurrently (especially on Cloudflare), so every write is a single atomic
+ * batch that re-checks its preconditions in SQL. Closing a pot uses the pot's `version` for optimistic locking.
  */
 export class Store {
-	readonly #db: DatabaseSync;
+	readonly #db: Database;
 	readonly #codeNames: readonly string[];
 	readonly #now: () => number;
 
-	constructor(path: string, codeNames: readonly string[], now: () => number = Date.now) {
-		if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
-		this.#db = new DatabaseSync(path);
-		this.#db.exec(SCHEMA);
+	constructor(db: Database, codeNames: readonly string[], now: () => number = Date.now) {
+		this.#db = db;
 		this.#codeNames = codeNames;
 		this.#now = now;
 	}
 
-	close(): void {
-		this.#db.close();
-	}
-
-	get maxParticipants(): number {
-		return this.#codeNames.length;
-	}
-
-	createPot(theme: string): Pot {
-		const now = this.#now();
-		const insert = this.#db.prepare(
-			'INSERT OR IGNORE INTO pots (id, admin_token, theme, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-		);
+	async createPot(theme: string): Promise<Pot> {
 		for (;;) {
-			const id = potId();
-			const adminToken = randomToken(24);
-			if (insert.run(id, adminToken, theme, now, now).changes === 1) {
-				return { id, adminToken, theme, createdAt: now, updatedAt: now, closedAt: null };
-			}
+			const now = this.#now();
+			const pot: Pot = {
+				id: potId(),
+				adminToken: randomToken(24),
+				theme,
+				version: 0,
+				createdAt: now,
+				updatedAt: now,
+				closedAt: null,
+			};
+			const [inserted] = await this.#db.batch([
+				sql(
+					'INSERT OR IGNORE INTO pots (id, admin_token, theme, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+					pot.id,
+					pot.adminToken,
+					pot.theme,
+					now,
+					now,
+				),
+			]);
+			if (inserted === 1) return pot;
 		}
 	}
 
-	getPot(id: string): Pot | undefined {
-		const row = this.#db.prepare('SELECT * FROM pots WHERE id = ?').get(id);
-		if (!row) return undefined;
-		return {
-			id: row.id as string,
-			adminToken: row.admin_token as string,
-			theme: row.theme as string,
-			createdAt: row.created_at as number,
-			updatedAt: row.updated_at as number,
-			closedAt: row.closed_at as number | null,
-		};
+	async getPot(id: string): Promise<Pot | undefined> {
+		const row = await this.#db.first(sql('SELECT * FROM pots WHERE id = ?', id));
+		return row && toPot(row);
 	}
 
 	isAdmin(pot: Pot, token: string): boolean {
-		const a = Buffer.from(pot.adminToken);
-		const b = Buffer.from(token);
-		return a.length === b.length && timingSafeEqual(a, b);
+		return safeEqual(pot.adminToken, token);
 	}
 
 	/** Participants sorted by name. */
-	listParticipants(potId: string): Participant[] {
-		return this.#db
-			.prepare('SELECT * FROM participants WHERE pot_id = ? ORDER BY name_key')
-			.all(potId)
-			.map((row) => ({
-				id: row.id as number,
-				name: row.name as string,
-				codeName: row.code_name as string,
-				token: row.token as string,
-				receiverId: row.receiver_id as number | null,
-			}));
+	async listParticipants(potId: string): Promise<Participant[]> {
+		const rows = await this.#db.all(sql('SELECT * FROM participants WHERE pot_id = ? ORDER BY name_key', potId));
+		return rows.map(toParticipant);
+	}
+
+	async listExclusions(potId: string): Promise<Exclusion[]> {
+		const rows = await this.#db.all(sql('SELECT a, b FROM exclusions WHERE pot_id = ?', potId));
+		return rows.map((row) => ({ a: row.a as number, b: row.b as number }));
 	}
 
 	/**
 	 * Adds a participant. Joining again with the same name and the participant's token is idempotent
 	 * (e.g. reloading the confirmation page) and returns the existing entry.
 	 */
-	join(pot: Pot, name: string, token: string | undefined): JoinResult {
-		if (pot.closedAt !== null) return { ok: false, error: 'closed' };
-		const participants = this.listParticipants(pot.id);
-
+	async join(pot: Pot, name: string, token: string | undefined): Promise<JoinResult> {
 		const key = nameKey(name);
-		const existing = participants.find((p) => nameKey(p.name) === key);
-		if (existing) {
-			if (token && existing.token === token) return { ok: true, participant: existing, isNew: false };
-			return { ok: false, error: 'name-taken' };
+		for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+			const participants = await this.listParticipants(pot.id);
+
+			const existing = participants.find((p) => nameKey(p.name) === key);
+			if (existing) {
+				if (token && safeEqual(existing.token, token)) return { ok: true, participant: existing, isNew: false };
+				return { ok: false, error: 'name-taken' };
+			}
+
+			const used = new Set(participants.map((p) => p.codeName));
+			const available = this.#codeNames.filter((n) => !used.has(n));
+			if (available.length === 0) return { ok: false, error: 'full' };
+
+			const codeName = pick(available);
+			const newToken = randomToken(24);
+			const now = this.#now();
+			try {
+				const [inserted] = await this.#db.batch([
+					sql(
+						`INSERT INTO participants (pot_id, name, name_key, code_name, token, created_at)
+						SELECT ?, ?, ?, ?, ?, ? WHERE ${IS_OPEN}`,
+						pot.id,
+						name,
+						key,
+						codeName,
+						newToken,
+						now,
+						pot.id,
+					),
+					this.#touch(pot.id),
+				]);
+				if (inserted === 0) return { ok: false, error: 'closed' };
+			} catch (error) {
+				// someone else joined at the same moment with the same name or code name: check again
+				if (isUniqueViolation(error)) continue;
+				throw error;
+			}
+
+			const row = await this.#db.first(
+				sql('SELECT * FROM participants WHERE pot_id = ? AND token = ?', pot.id, newToken),
+			);
+			if (!row) throw new Error('participant vanished after insert');
+			return { ok: true, participant: toParticipant(row), isNew: true };
 		}
-
-		const used = new Set(participants.map((p) => p.codeName));
-		const available = this.#codeNames.filter((n) => !used.has(n));
-		if (available.length === 0) return { ok: false, error: 'full' };
-
-		const codeName = pick(available);
-		const newToken = randomToken(24);
-		const now = this.#now();
-		const { lastInsertRowid } = this.#db
-			.prepare(
-				'INSERT INTO participants (pot_id, name, name_key, code_name, token, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-			)
-			.run(pot.id, name, key, codeName, newToken, now);
-		this.#touch(pot.id);
-		return {
-			ok: true,
-			participant: { id: Number(lastInsertRowid), name, codeName, token: newToken, receiverId: null },
-			isNew: true,
-		};
+		throw new Error('too many concurrent joins');
 	}
 
-	removeParticipant(pot: Pot, participantId: number): void {
-		if (pot.closedAt !== null) return;
-		this.#db.prepare('DELETE FROM participants WHERE pot_id = ? AND id = ?').run(pot.id, participantId);
-		this.#touch(pot.id);
-	}
-
-	listExclusions(potId: string): Exclusion[] {
-		return this.#db
-			.prepare('SELECT a, b FROM exclusions WHERE pot_id = ?')
-			.all(potId)
-			.map((row) => ({ a: row.a as number, b: row.b as number }));
+	async removeParticipant(pot: Pot, participantId: number): Promise<void> {
+		await this.#db.batch([
+			sql(`DELETE FROM participants WHERE pot_id = ? AND id = ? AND ${IS_OPEN}`, pot.id, participantId, pot.id),
+			this.#touch(pot.id),
+		]);
 	}
 
 	/** Excludes two participants from drawing each other (in both directions). */
-	addExclusion(pot: Pot, first: number, second: number): void {
-		if (pot.closedAt !== null || first === second) return;
+	async addExclusion(pot: Pot, first: number, second: number): Promise<void> {
+		if (!Number.isInteger(first) || !Number.isInteger(second) || first === second) return;
 		const [a, b] = first < second ? [first, second] : [second, first];
-		const ids = new Set(this.listParticipants(pot.id).map((p) => p.id));
-		if (!ids.has(a) || !ids.has(b)) return;
-		this.#db.prepare('INSERT OR IGNORE INTO exclusions (pot_id, a, b) VALUES (?, ?, ?)').run(pot.id, a, b);
-		this.#touch(pot.id);
+		await this.#db.batch([
+			sql(
+				`INSERT OR IGNORE INTO exclusions (pot_id, a, b)
+				SELECT ?, ?, ? WHERE ${IS_OPEN}
+				AND (SELECT count(*) FROM participants WHERE pot_id = ? AND id IN (?, ?)) = 2`,
+				pot.id,
+				a,
+				b,
+				pot.id,
+				pot.id,
+				a,
+				b,
+			),
+			this.#touch(pot.id),
+		]);
 	}
 
-	removeExclusion(pot: Pot, first: number, second: number): void {
-		if (pot.closedAt !== null) return;
+	async removeExclusion(pot: Pot, first: number, second: number): Promise<void> {
 		const [a, b] = first < second ? [first, second] : [second, first];
-		this.#db.prepare('DELETE FROM exclusions WHERE pot_id = ? AND a = ? AND b = ?').run(pot.id, a, b);
-		this.#touch(pot.id);
+		await this.#db.batch([
+			sql(`DELETE FROM exclusions WHERE pot_id = ? AND a = ? AND b = ? AND ${IS_OPEN}`, pot.id, a, b, pot.id),
+			this.#touch(pot.id),
+		]);
 	}
 
 	/** Draws the assignment and closes the pot. */
-	closePot(pot: Pot): CloseResult {
-		if (pot.closedAt !== null) return { ok: false, error: 'closed' };
-		const participants = this.listParticipants(pot.id);
-		if (participants.length < MIN_PARTICIPANTS) return { ok: false, error: 'too-few' };
+	async closePot(potId: string): Promise<CloseResult> {
+		for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+			const pot = await this.getPot(potId);
+			if (!pot || pot.closedAt !== null) return { ok: false, error: 'closed' };
+			const participants = await this.listParticipants(pot.id);
+			if (participants.length < MIN_PARTICIPANTS) return { ok: false, error: 'too-few' };
+			const exclusions = await this.listExclusions(pot.id);
 
-		const assignment = draw(participants.length, this.#isAllowed(pot.id, participants));
-		if (!assignment) return { ok: false, error: 'impossible' };
+			const assignment = draw(participants.length, isAllowedFor(participants, exclusions));
+			if (!assignment) return { ok: false, error: 'impossible' };
 
-		const setReceiver = this.#db.prepare('UPDATE participants SET receiver_id = ? WHERE id = ?');
-		this.#transaction(() => {
-			assignment.forEach((receiver, giver) => {
-				setReceiver.run((participants[receiver] as Participant).id, (participants[giver] as Participant).id);
-			});
-			this.#db
-				.prepare('UPDATE pots SET closed_at = ?, updated_at = ? WHERE id = ?')
-				.run(this.#now(), this.#now(), pot.id);
-		});
-		return { ok: true };
-	}
-
-	/** True if the pot can currently be drawn, respecting all exclusions. */
-	canDraw(potId: string): boolean {
-		const participants = this.listParticipants(potId);
-		return (
-			participants.length >= MIN_PARTICIPANTS &&
-			isDrawPossible(participants.length, this.#isAllowed(potId, participants))
-		);
+			// giver id → receiver id, passed as one JSON parameter to stay within D1's parameter limit
+			const receivers = Object.fromEntries(
+				assignment.map((receiver, giver) => [
+					(participants[giver] as Participant).id,
+					(participants[receiver] as Participant).id,
+				]),
+			);
+			const now = this.#now();
+			// Both statements only apply if nothing changed since we read the pot (same version).
+			const changes = await this.#db.batch([
+				sql(
+					`UPDATE participants
+					SET receiver_id = (SELECT value FROM json_each(?) WHERE key = CAST(participants.id AS TEXT))
+					WHERE pot_id = ? AND (SELECT version FROM pots WHERE id = ?) = ?`,
+					JSON.stringify(receivers),
+					pot.id,
+					pot.id,
+					pot.version,
+				),
+				sql(
+					'UPDATE pots SET closed_at = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ? AND closed_at IS NULL',
+					now,
+					now,
+					pot.id,
+					pot.version,
+				),
+			]);
+			if (changes[1] === 1) return { ok: true };
+		}
+		throw new Error('pot keeps changing while closing');
 	}
 
 	/** Deletes pots without activity since `cutoff` (ms timestamp). Returns the number of deleted pots. */
-	deleteInactiveSince(cutoff: number): number {
-		return Number(this.#db.prepare('DELETE FROM pots WHERE updated_at < ?').run(cutoff).changes);
+	async deleteInactiveSince(cutoff: number): Promise<number> {
+		const [deleted] = await this.#db.batch([sql('DELETE FROM pots WHERE updated_at < ?', cutoff)]);
+		return deleted ?? 0;
 	}
 
-	/** Translates exclusions into a check on participant indexes, as used by draw(). */
-	#isAllowed(potId: string, participants: Participant[]): IsAllowed {
-		const index = new Map(participants.map((p, i) => [p.id, i]));
-		const forbidden = new Set(
-			this.listExclusions(potId).flatMap(({ a, b }) => [
-				`${index.get(a)}>${index.get(b)}`,
-				`${index.get(b)}>${index.get(a)}`,
-			]),
-		);
-		return (giver, receiver) => !forbidden.has(`${giver}>${receiver}`);
-	}
-
-	#touch(potId: string): void {
-		this.#db.prepare('UPDATE pots SET updated_at = ? WHERE id = ?').run(this.#now(), potId);
-	}
-
-	#transaction(fn: () => void): void {
-		this.#db.exec('BEGIN');
-		try {
-			fn();
-			this.#db.exec('COMMIT');
-		} catch (error) {
-			this.#db.exec('ROLLBACK');
-			throw error;
-		}
+	#touch(potId: string) {
+		return sql('UPDATE pots SET updated_at = ?, version = version + 1 WHERE id = ?', this.#now(), potId);
 	}
 }

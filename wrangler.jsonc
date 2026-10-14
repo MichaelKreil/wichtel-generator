@@ -1,0 +1,28 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "wichteltopf",
+	"main": "src/worker.ts",
+	"compatibility_date": "2026-09-01",
+	"assets": {
+		"directory": "public"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "wichteltopf",
+			// from `npx wrangler d1 create wichteltopf`
+			"database_id": "1c47009a-ad6d-4ebd-814f-a131f4806191",
+			"migrations_dir": "migrations"
+		}
+	],
+	"vars": {
+		"POT_TTL_DAYS": "180"
+	},
+	"triggers": {
+		"crons": ["17 3 * * *"]
+	},
+	"observability": {
+		"enabled": true
+	},
+	"routes": [{ "pattern": "wichteltopf.de", "custom_domain": true }]
+}

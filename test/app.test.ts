@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
-import { createApp, loadCodeNames } from '../src/app.ts';
+import { createApp } from '../src/app.ts';
+import { CODE_NAMES } from '../src/codenames.ts';
+import { NodeDatabase } from '../src/db-node.ts';
 import { Store } from '../src/store.ts';
 
 const BASE = 'http://localhost';
@@ -9,7 +11,7 @@ let app: Hono;
 let store: Store;
 
 beforeEach(() => {
-	store = new Store(':memory:', loadCodeNames());
+	store = new Store(new NodeDatabase(':memory:'), CODE_NAMES);
 	app = createApp({ store });
 });
 
@@ -45,7 +47,6 @@ describe('app', () => {
 		assert.equal(res.status, 200);
 		assert.match(await res.text(), /Wichteltopf anlegen/);
 		assert.match(res.headers.get('content-security-policy') ?? '', /default-src 'self'/);
-		assert.equal((await get('/static/style.css')).status, 200);
 		assert.match(await (await get('/static/themes.css')).text(), /data-theme="candle"/);
 		assert.equal((await get('/healthz')).status, 200);
 	});
@@ -93,7 +94,7 @@ describe('app', () => {
 	it('lets the admin remove participants and add exclusions', async () => {
 		const { potPath, adminPath } = await createPot();
 		for (const name of ['Anna', 'Ben', 'Carla']) await join(potPath, name);
-		const [anna, ben] = store.listParticipants(potPath.slice(1));
+		const [anna, ben] = await store.listParticipants(potPath.slice(1));
 		assert.ok(anna && ben);
 
 		await post(`${adminPath}/ausschluss`, { a: String(anna.id), b: String(ben.id) });

@@ -10,6 +10,8 @@
 	"scripts": {
 		"start": "node src/server.ts",
 		"dev": "node --watch src/server.ts",
+		"cf:dev": "wrangler d1 migrations apply wichteltopf --local && wrangler dev",
+		"deploy": "wrangler d1 migrations apply wichteltopf --remote && wrangler deploy",
 		"test": "node --test \"test/**/*.test.ts\"",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
@@ -27,6 +29,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",
 		"@types/node": "^24.0.0",
-		"typescript": "^7.0.2"
+		"typescript": "^7.0.2",
+		"wrangler": "^4.151.0"
 	}
 }

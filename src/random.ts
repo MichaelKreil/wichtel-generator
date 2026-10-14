@@ -1,9 +1,35 @@
-import { randomInt } from 'node:crypto';
-
 /** Returns a random integer in [0, max). Injectable for deterministic tests. */
 export type Rng = (max: number) => number;
 
-export const secureRng: Rng = (max) => randomInt(max);
+// Web Crypto works in Node and in Cloudflare Workers. Random values are fetched in blocks for speed.
+const pool = new Uint32Array(256);
+let poolIndex = pool.length;
+
+function randomUint32(): number {
+	if (poolIndex >= pool.length) {
+		crypto.getRandomValues(pool);
+		poolIndex = 0;
+	}
+	return pool[poolIndex++] as number;
+}
+
+/** Cryptographically secure and unbiased (rejection sampling). */
+export const secureRng: Rng = (max) => {
+	if (!Number.isInteger(max) || max < 1 || max > 2 ** 32) throw new RangeError(`invalid max: ${max}`);
+	const limit = 2 ** 32 - (2 ** 32 % max);
+	for (;;) {
+		const value = randomUint32();
+		if (value < limit) return value % max;
+	}
+};
+
+/** Constant-time string comparison, for secret tokens. */
+export function safeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	return diff === 0;
+}
 
 export function pick<T>(list: readonly T[], rng: Rng = secureRng): T {
 	if (list.length === 0) throw new Error('cannot pick from an empty list');

@@ -13,24 +13,31 @@ Requires Node.js ≥ 24 (TypeScript runs natively, no build step).
 
 ```bash
 npm install
-npm run dev      # http://localhost:8080, restarts on change
+npm run dev      # Node version: http://localhost:8080, restarts on change
+npm run cf:dev   # Cloudflare version with local D1: http://localhost:8787
 npm run check    # typecheck + lint + tests
 npm run format   # auto-format with Biome
 ```
 
 ### Structure
 
-| Path                   | Purpose                                                  |
-| ---------------------- | -------------------------------------------------------- |
-| `src/server.ts`        | Entry point: config, HTTP server, cleanup of old pots    |
-| `src/app.ts`           | Routes (Hono)                                            |
-| `src/store.ts`         | Persistence (SQLite via `node:sqlite`)                   |
-| `src/draw.ts`          | The drawing algorithm                                    |
-| `src/views.ts`         | Server-rendered HTML                                     |
-| `src/themes.ts`        | Background themes                                        |
-| `data/codenames.txt`   | Pool of code names (also limits the participants per pot) |
-| `public/`              | CSS, JS, generated images                                |
-| `assets/backgrounds/`  | Source photos for the themes                             |
+| Path                  | Purpose                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| `src/worker.ts`       | Entry point for Cloudflare Workers (incl. daily cleanup cron) |
+| `src/server.ts`       | Entry point for Node.js / Docker                              |
+| `src/app.ts`          | Routes (Hono), shared by both entry points                    |
+| `src/store.ts`        | Data access, written against the async interface in `db.ts`   |
+| `src/db-d1.ts`        | Database driver for Cloudflare D1                             |
+| `src/db-node.ts`      | Database driver for `node:sqlite`                             |
+| `migrations/`         | SQL schema, used by both drivers                              |
+| `src/draw.ts`         | The drawing algorithm                                         |
+| `src/views.ts`        | Server-rendered HTML                                          |
+| `src/themes.ts`       | Background themes                                             |
+| `src/codenames.ts`    | Pool of code names (also limits the participants per pot)     |
+| `public/static/`      | CSS, JS, generated images                                     |
+| `assets/backgrounds/` | Source photos for the themes                                  |
+
+Schema changes go into a new `migrations/NNNN_name.sql` file. Never edit an applied migration.
 
 ### Adding a theme
 
@@ -38,7 +45,25 @@ npm run format   # auto-format with Biome
 2. Run `npm run images` (requires `cwebp`: `brew install webp`).
 3. Add `{ id, dark, align }` to `src/themes.ts`.
 
-## Configuration
+## Deployment on Cloudflare (main)
+
+The app runs as a Cloudflare Worker with a D1 database. Static files are served directly by Cloudflare. The free plan is plenty.
+
+One-time setup:
+
+```bash
+npx wrangler login
+npx wrangler d1 create wichteltopf   # put the returned database_id into wrangler.jsonc
+npm run deploy                       # applies migrations, then deploys
+```
+
+Custom domain: once `wichteltopf.de` is active in Cloudflare, enable the `routes` entry in `wrangler.jsonc` and deploy again.
+
+CI deploys automatically on every push to `main`. This needs the repository secrets `CLOUDFLARE_API_TOKEN` (template "Edit Cloudflare Workers", plus permission "D1: Edit") and `CLOUDFLARE_ACCOUNT_ID`.
+
+Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel restore wichteltopf --timestamp=…` (restore the DB to a point in time).
+
+## Self-hosting with Node.js / Docker (alternative)
 
 | Variable        | Default                   | Description                                                       |
 | --------------- | ------------------------- | ----------------------------------------------------------------- |
@@ -47,25 +72,8 @@ npm run format   # auto-format with Biome
 | `DATABASE_PATH` | `database/wichtel.sqlite` | SQLite file                                                       |
 | `POT_TTL_DAYS`  | `180`                     | Pots without activity are deleted after this many days            |
 
-## Deployment with Docker
-
 ```bash
-docker pull ghcr.io/michaelkreil/wichtel-generator:latest
+docker pull ghcr.io/michaelkreil/wichtel-generator:latest   # published for tags v*
 ```
 
-The image runs as a non-root user, stores data in the `/app/database` volume, and has a healthcheck on `/healthz`.
-
-CI runs typecheck, lint and tests on every push and PR. Pushes to `main` publish `:latest`, and tags `v*` publish versioned images.
-
-### Example: Hetzner Cloud
-
-1. Start a new server:
-   - Image: Docker CE
-   - Type: CAX11 (smallest ARM64)
-2. Make sure DNS points to the server's IP.
-3. Log in via SSH and run:
-
-```bash
-wget "https://github.com/MichaelKreil/wichtel-generator/raw/refs/heads/main/compose.yaml"
-docker compose up --detach
-```
+The image runs as a non-root user, stores data in the `/app/database` volume and has a healthcheck on `/healthz`. `compose.yaml` shows a setup with nginx-proxy and Let's Encrypt.
