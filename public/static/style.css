@@ -4,6 +4,8 @@
 	--field: rgb(0 0 0 / 0.07);
 	--field-hover: rgb(0 0 0 / 0.14);
 	--glass: blur(15px) contrast(90%) brightness(111%);
+	/* tint behind the text, so it stays readable on busy photos */
+	--panel: rgb(255 255 255 / 0.45);
 	--panel-start: 5vw;
 	--panel-end: auto;
 	--error: #c1121f;
@@ -60,6 +62,7 @@ main {
 	margin-inline: var(--panel-start) var(--panel-end);
 	padding: 8px 32px 32px;
 	border-radius: 30px;
+	background: var(--panel);
 	backdrop-filter: var(--glass);
 	-webkit-backdrop-filter: var(--glass);
 }

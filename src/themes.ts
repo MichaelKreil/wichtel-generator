@@ -56,7 +56,7 @@ export function themesCss(): string {
 	return THEMES.map(
 		({ id, dark, align }) =>
 			`[data-theme="${id}"]{--bg-sm:url(/static/img/bg/${id}-sm.webp);--bg-lg:url(/static/img/bg/${id}-lg.webp)}` +
-			`[data-theme="${id}"]{${dark ? '--fg:#fff;--fg-inverse:#000;--field:rgb(255 255 255/.12);--field-hover:rgb(255 255 255/.22);--glass:blur(15px) brightness(80%)' : ''}}` +
+			`[data-theme="${id}"]{${dark ? '--fg:#fff;--fg-inverse:#000;--field:rgb(255 255 255/.12);--field-hover:rgb(255 255 255/.22);--glass:blur(15px) brightness(80%);--panel:rgb(0 0 0/.3)' : ''}}` +
 			(align === 'center' ? `[data-theme="${id}"]{--panel-start:auto;--panel-end:auto}` : ''),
 	)
 		.join('\n')
