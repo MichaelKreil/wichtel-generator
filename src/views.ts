@@ -336,7 +336,11 @@ export function privacyPage(page: Page): Html {
 		html`<h1>Datenschutzerklärung</h1>
 
 		<h2>Verantwortlich</h2>
-		<p>${OPERATOR.name}<br>${OPERATOR.address}<br>E-Mail: ${OPERATOR.email}</p>
+		<p>
+			${OPERATOR.name}<br>
+			${OPERATOR.address.map((line) => html`${line}<br>`)}
+			E-Mail: <a href="mailto:${OPERATOR.email}">${OPERATOR.email}</a>
+		</p>
 
 		<h2>Welche Daten wir speichern</h2>
 		<ul>

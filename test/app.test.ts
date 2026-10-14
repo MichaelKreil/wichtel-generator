@@ -292,7 +292,10 @@ describe('privacy page', () => {
 	it('is linked from every page', async () => {
 		const res = await get('/datenschutz');
 		assert.equal(res.status, 200);
-		assert.match(await res.text(), /Datenschutzerklärung/);
+		const html = await res.text();
+		assert.match(html, /Datenschutzerklärung/);
+		assert.match(html, /Gottschedstrasse 4<br>/);
+		assert.ok(!html.includes('BITTE ERGÄNZEN'));
 		assert.match(await (await get('/')).text(), /<a href="\/datenschutz">Datenschutz<\/a>/);
 		assert.match(await (await get('/Unknown-abcdefgh')).text(), /href="\/datenschutz"/);
 	});
