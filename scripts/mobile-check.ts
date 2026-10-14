@@ -8,7 +8,7 @@ const WIDTHS = [320, 390];
 
 // long names are the hardest case for narrow layouts
 const LONG_NAMES: Demo = {
-	theme: 'tanne',
+	theme: 'snowman',
 	codeNames: 'schauspiel',
 	participants: ['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt', 'Carla Weiß', 'Maximilian von Hohenzollern'],
 	exclusions: [['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt']],

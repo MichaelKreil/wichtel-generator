@@ -37,16 +37,15 @@ npm run format   # auto-format with Biome
 | `src/themes.ts`       | Background themes                                             |
 | `src/codenames.ts`    | Code name lists to choose from; a list's size limits the pot |
 | `public/static/`      | CSS, JS, generated images                                     |
-| `public/static/paper/` | Wrapping paper patterns (page backgrounds)                   |
+| `assets/backgrounds/` | Source photos for the backgrounds                             |
 
 Schema changes go into a new `migrations/NNNN_name.sql` file. Never edit an applied migration.
 
-### Adding a wrapping paper
+### Adding a background photo
 
-1. Draw a seamless tile as `public/static/paper/<id>.svg` (see the existing ones, 30–80px).
-2. Add `{ id, label, color }` to `src/themes.ts` and run `npm run themes`.
-
-The link preview image and the PNG icons are rendered with `npm run images` (needs Google Chrome).
+1. Put the photo into `assets/backgrounds/<id>.jpg`.
+2. Run `npm run images` (requires `cwebp`: `brew install webp`, and Google Chrome for the preview image and icons).
+3. Add `{ id, label, color, align }` to `src/themes.ts` and run `npm run themes`.
 Fonts in `public/static/fonts/` are under the SIL Open Font License (see the license files there).
 
 ## Deployment on Cloudflare (main)

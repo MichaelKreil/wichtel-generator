@@ -41,8 +41,8 @@ describe('worker', () => {
 	it('deletes inactive pots in the scheduled job', async (t) => {
 		t.mock.method(console, 'log', () => {});
 		const env = createEnv();
-		const old = await new Store(new D1Database(env.DB), codeNamesFor, () => 0).createPot('tanne', 'mittelerde');
-		const recent = await new Store(new D1Database(env.DB), codeNamesFor).createPot('tanne', 'mittelerde');
+		const old = await new Store(new D1Database(env.DB), codeNamesFor, () => 0).createPot('tree1', 'mittelerde');
+		const recent = await new Store(new D1Database(env.DB), codeNamesFor).createPot('tree1', 'mittelerde');
 		await worker.scheduled({}, env);
 		const store = new Store(new D1Database(env.DB), codeNamesFor);
 		assert.equal(await store.getPot(old.id), undefined);

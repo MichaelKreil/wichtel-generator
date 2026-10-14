@@ -1,6 +1,6 @@
 /*
- * Wichteltopf: wrapping paper, a kraft paper card, and hand-written gift tags.
- * The wrapping paper (page background) comes from themes.css, everything else is defined here.
+ * Wichteltopf: a festive photo, a kraft paper card, and hand-written gift tags.
+ * The photo (page background) comes from themes.css, everything else is defined here.
  */
 
 @font-face {
@@ -44,18 +44,35 @@
 }
 
 html {
-	background: var(--paper-color, #1e4634);
+	background: var(--paper-color, #53260c);
 }
 
 body {
 	margin: 0;
 	min-height: 100vh;
 	padding: 40px 16px 72px;
-	background: var(--paper-color) var(--paper);
 	color: var(--ink);
 	font:
 		400 1rem / 1.5 system-ui,
 		sans-serif;
+}
+
+/* The photo sits on its own fixed layer: iOS Safari ignores background-attachment: fixed. */
+body::before {
+	content: "";
+	position: fixed;
+	z-index: -1;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100lvh;
+	background: var(--paper-color) var(--bg-sm) center / cover no-repeat;
+}
+
+@media (min-width: 1000px) {
+	body::before {
+		background-image: var(--bg-lg);
+	}
 }
 
 /* the kraft paper card that holds all content */
@@ -68,6 +85,13 @@ main {
 	box-shadow:
 		0 1px 0 rgb(255 255 255 / 0.4) inset,
 		0 22px 48px -18px rgb(0 0 0 / 0.55);
+}
+
+/* on wide screens, the card leaves room for the photo's motif */
+@media (min-width: 1000px) {
+	main {
+		margin-inline: var(--card-start, 6vw) auto;
+	}
 }
 
 @media (max-width: 600px) {
@@ -413,26 +437,17 @@ button.sticky {
 
 .swatch {
 	display: block;
-	aspect-ratio: 4 / 3;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 3 / 2;
+	object-fit: cover;
 	border-radius: 8px;
-	background: var(--paper-color) var(--paper);
-	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
-}
-
-.swatch-label {
-	font-size: 0.85rem;
-	line-height: 1.2;
-	color: var(--ink-soft);
+	background: var(--paper-color);
 }
 
 .themes input:checked + .swatch {
 	outline: 3px solid var(--ink);
 	outline-offset: 2px;
-}
-
-.themes input:checked ~ .swatch-label {
-	color: var(--ink);
-	font-weight: 700;
 }
 
 .themes input:focus-visible + .swatch {

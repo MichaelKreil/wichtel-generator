@@ -129,12 +129,11 @@ export function startPage(page: Page): Html {
 			</fieldset>
 
 			<fieldset class="themes">
-				<legend><h2>Wähle ein Geschenkpapier</h2></legend>
+				<legend><h2>Wähle ein Hintergrundbild</h2></legend>
 				${THEMES.map(
 					(t) => html`<label>
 						<input type="radio" name="theme" value="${t.id}" ${t.id === page.theme ? 'checked' : ''}>
-						<span class="swatch" data-theme="${t.id}"></span>
-						<span class="swatch-label">${t.label}</span>
+						<img class="swatch" src="/static/img/thumb/${t.id}.webp" alt="${t.label}" width="384" height="256" loading="lazy">
 					</label>`,
 				)}
 			</fieldset>
