@@ -4,6 +4,7 @@ import { getCookie, setCookie } from 'hono/cookie';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
 import { safeEqual } from './random.ts';
+import type { RateLimiters } from './rate-limit.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
 import { getTheme, randomTheme, themesCss } from './themes.ts';
 import { adminPage, errorPage, personalPage, potPage, type ResultRow, resultPage, startPage } from './views.ts';
@@ -11,12 +12,14 @@ import { adminPage, errorPage, personalPage, potPage, type ResultRow, resultPage
 export interface AppOptions {
 	store: Store;
 	baseUrl?: string;
+	/** Per-IP limits for form submissions, to protect the database quota. */
+	rateLimiters?: RateLimiters;
 }
 
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
 /** The app without static file serving, which is done by Cloudflare or by src/server.ts. */
-export function createApp({ store, baseUrl }: AppOptions): Hono {
+export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	const app = new Hono();
 	const css = themesCss();
 
@@ -43,6 +46,22 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 	);
 	app.use(csrf({ origin: (requestOrigin, c) => requestOrigin === origin(c) }));
 	app.use(bodyLimit({ maxSize: 16 * 1024 }));
+	app.use(async (c, next) => {
+		if (c.req.method !== 'POST' || !rateLimiters) return next();
+		// Cloudflare sets cf-connecting-ip; behind other proxies x-forwarded-for
+		const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? '';
+		const limiter = c.req.path === '/neu' ? rateLimiters.create : rateLimiters.write;
+		if (await limiter(ip)) return next();
+		return c.html(
+			errorPage(
+				randomTheme().id,
+				'Zu viele Anfragen',
+				'Bitte warte eine Minute und versuche es dann noch einmal.',
+				false,
+			),
+			429,
+		);
+	});
 
 	app.get('/healthz', (c) => c.text('ok'));
 

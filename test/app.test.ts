@@ -4,6 +4,7 @@ import type { Hono } from 'hono';
 import { createApp } from '../src/app.ts';
 import { CODE_NAMES } from '../src/codenames.ts';
 import { NodeDatabase } from '../src/db-node.ts';
+import { memoryRateLimiter } from '../src/rate-limit.ts';
 import { Store } from '../src/store.ts';
 
 const BASE = 'http://localhost';
@@ -138,5 +139,32 @@ describe('app', () => {
 		const { potPath } = await createPot();
 		const res = await post(potPath, { name: 'Mallory' }, { Origin: 'https://evil.example' });
 		assert.equal(res.status, 403);
+	});
+});
+
+describe('rate limiting', () => {
+	it('rejects too many form submissions per IP', async () => {
+		const store = new Store(new NodeDatabase(':memory:'), CODE_NAMES);
+		const rateLimiters = { create: memoryRateLimiter(2, 60_000), write: memoryRateLimiter(30, 60_000) };
+		const app = createApp({ store, rateLimiters });
+		const create = (ip: string) =>
+			app.request(`${BASE}/neu`, {
+				method: 'POST',
+				body: new URLSearchParams({ theme: 'bag' }),
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: BASE, 'cf-connecting-ip': ip },
+			});
+		assert.equal((await create('1.1.1.1')).status, 303);
+		assert.equal((await create('1.1.1.1')).status, 303);
+		assert.equal((await create('1.1.1.1')).status, 429);
+		assert.equal((await create('2.2.2.2')).status, 303);
+	});
+
+	it('resets after the period', async () => {
+		let now = 0;
+		const limiter = memoryRateLimiter(1, 1000, () => now);
+		assert.ok(await limiter('a'));
+		assert.ok(!(await limiter('a')));
+		now = 1000;
+		assert.ok(await limiter('a'));
 	});
 });

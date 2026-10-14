@@ -6,6 +6,7 @@ import { createApp } from './app.ts';
 import { CODE_NAMES } from './codenames.ts';
 import { loadConfig } from './config.ts';
 import { NodeDatabase } from './db-node.ts';
+import { memoryRateLimiter } from './rate-limit.ts';
 import { Store } from './store.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -24,7 +25,8 @@ app.use(
 		},
 	}),
 );
-app.route('/', createApp({ store, baseUrl: config.baseUrl }));
+const rateLimiters = { create: memoryRateLimiter(3, 60_000), write: memoryRateLimiter(30, 60_000) };
+app.route('/', createApp({ store, baseUrl: config.baseUrl, rateLimiters }));
 
 async function cleanup(): Promise<void> {
 	const deleted = await store.deleteInactiveSince(Date.now() - config.potTtlDays * DAY);

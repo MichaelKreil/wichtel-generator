@@ -3,10 +3,13 @@ import type { Hono } from 'hono';
 import { createApp } from './app.ts';
 import { CODE_NAMES } from './codenames.ts';
 import { type D1Binding, D1Database } from './db-d1.ts';
+import { bindingRateLimiter, type RateLimitBinding } from './rate-limit.ts';
 import { Store } from './store.ts';
 
 interface Env {
 	DB: D1Binding;
+	CREATE_LIMITER: RateLimitBinding;
+	WRITE_LIMITER: RateLimitBinding;
 	/** Optional, e.g. "https://wichteltopf.de". Derived from the request otherwise. */
 	BASEURL?: string;
 	POT_TTL_DAYS?: string;
@@ -20,7 +23,12 @@ let cached: { env: Env; store: Store; app: Hono } | undefined;
 function setup(env: Env) {
 	if (cached?.env !== env) {
 		const store = new Store(new D1Database(env.DB), CODE_NAMES);
-		cached = { env, store, app: createApp({ store, baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined }) };
+		const app = createApp({
+			store,
+			baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined,
+			rateLimiters: { create: bindingRateLimiter(env.CREATE_LIMITER), write: bindingRateLimiter(env.WRITE_LIMITER) },
+		});
+		cached = { env, store, app };
 	}
 	return cached;
 }

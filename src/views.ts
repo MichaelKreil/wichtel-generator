@@ -258,12 +258,12 @@ export function resultPage(theme: string, rows: ResultRow[]): Html {
 	);
 }
 
-export function errorPage(theme: string, title: string, text: string): Html {
+export function errorPage(theme: string, title: string, text: string, offerNewPot = true): Html {
 	return layout(
 		theme,
 		title,
 		html`<h1>${title}</h1>
 		<p>${text}</p>
-		<p>Möchtest du vielleicht einen <a href="/">neuen Wichteltopf anlegen</a>?</p>`,
+		${offerNewPot ? html`<p>Möchtest du vielleicht einen <a href="/">neuen Wichteltopf anlegen</a>?</p>` : ''}`,
 	);
 }
