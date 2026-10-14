@@ -228,7 +228,7 @@ export function potPage({ page, potPath, participants, error }: PotPageProps): H
 		<form method="post" action="${potPath}">
 			${error ? html`<p class="error" role="alert">${error}</p>` : ''}
 			<label for="name"><h2>Dein Vor- und Nachname</h2></label>
-			<input type="text" id="name" name="name" maxlength="${MAX_NAME_LENGTH}" autocomplete="name" required autofocus>
+			<input type="text" id="name" name="name" maxlength="${MAX_NAME_LENGTH}" autocomplete="name" required>
 			<button type="submit">Mitmachen</button>
 		</form>`,
 		{ description: 'Wirf deinen Namen in den Wichteltopf und bekomme deinen geheimen Codenamen.' },
