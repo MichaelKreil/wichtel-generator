@@ -21,7 +21,7 @@
 		"check": "npm run typecheck && npm run lint && npm test",
 		"images": "./scripts/build-images.sh",
 		"themes": "node scripts/build-themes-css.ts",
-		"upgrade": "npx npm-check-updates -u && npm install"
+		"upgrade": "npx npm-check-updates -u && npm install && npm audit fix"
 	},
 	"author": "Michael Kreil",
 	"license": "MIT",
@@ -31,8 +31,14 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",
-		"@types/node": "^24.0.0",
+		"@types/node": "^26.6.5",
+		"npm-check-updates": "^23.1.1",
 		"typescript": "^7.0.2",
 		"wrangler": "^4.151.0"
+	},
+	"allowScripts": {
+		"esbuild": true,
+		"fsevents": true,
+		"workerd": true
 	}
 }
