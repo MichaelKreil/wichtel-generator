@@ -3,32 +3,46 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="../public/static/style.css">
 <style>
+	/* style.css uses absolute URLs, which don't resolve for a local file */
+	@font-face { font-family: "Young Serif"; src: url(../public/static/fonts/young-serif-400.woff2); }
+	@font-face { font-family: "Caveat"; font-weight: 600; src: url(../public/static/fonts/caveat-600.woff2); }
+	.tag::before { background-image: url(../public/static/string.svg); }
 	html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
 	body {
-		background: url(backgrounds/tree1.jpg) 70% center / cover;
-		font-family: system-ui, sans-serif;
-		color: #fff;
+		padding: 0;
+		background: #1e4634 url(../public/static/paper/tanne.svg);
+		background-size: 96px;
 		display: flex;
 		align-items: center;
+		justify-content: center;
 	}
-	.panel {
-		margin-left: 70px;
-		padding: 48px 56px;
-		border-radius: 36px;
-		background: rgb(0 0 0 / 0.35);
-		backdrop-filter: blur(14px);
+	main {
+		display: flex;
+		align-items: center;
+		gap: 40px;
+		max-width: none;
+		margin: 0;
+		padding: 48px 64px 48px 56px;
 	}
-	h1 { font-size: 84px; margin: 0 0 16px; line-height: 1; }
-	p { font-size: 36px; margin: 0; line-height: 1.3; font-weight: 400; }
-	.url { margin-top: 28px; font-size: 30px; opacity: 0.85; }
+	h1 { font-size: 96px; margin: 0 0 12px; }
+	p { margin: 0; font-size: 30px; line-height: 1.3; color: var(--ink-soft); }
+	.url { margin-top: 18px; font-size: 26px; }
+	.tag { margin-left: 60px; transform: rotate(-5deg) scale(1.35); }
 </style>
 </head>
 <body>
-	<div class="panel">
-		<h1>Wichteltopf</h1>
-		<p>Namen eintragen, geheim auslosen,<br>gegenseitig beschenken.</p>
-		<p class="url">wichteltopf.de</p>
-	</div>
+	<main>
+		<div>
+			<h1>Wichteltopf</h1>
+			<p>Namen eintragen, geheim auslosen,<br>gegenseitig beschenken.</p>
+			<p class="url">wichteltopf.de</p>
+		</div>
+		<div class="tag tag-big"><div class="tag-paper">
+			<span class="tag-line"><span class="tag-label">Von:</span> <span class="tag-value">???</span></span>
+			<span class="tag-line"><span class="tag-label">Für:</span> <span class="tag-value">dich</span></span>
+		</div></div>
+	</main>
 </body>
 </html>

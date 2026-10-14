@@ -1,15 +1,36 @@
+/*
+ * Wichteltopf: wrapping paper, a kraft paper card, and hand-written gift tags.
+ * The wrapping paper (page background) comes from themes.css, everything else is defined here.
+ */
+
+@font-face {
+	font-family: "Young Serif";
+	src: url(/static/fonts/young-serif-400.woff2) format("woff2");
+	font-weight: 400;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Caveat";
+	src: url(/static/fonts/caveat-600.woff2) format("woff2");
+	font-weight: 600;
+	font-display: swap;
+}
+
 :root {
-	--fg: #111;
-	--fg-inverse: #fff;
-	--field: rgb(0 0 0 / 0.07);
-	--field-hover: rgb(0 0 0 / 0.14);
-	--glass: blur(15px) contrast(90%) brightness(111%);
-	/* tint behind the text, so it stays readable on busy photos */
-	--panel: rgb(255 255 255 / 0.45);
-	--panel-start: 5vw;
-	--panel-end: auto;
-	--error: #c1121f;
-	--radius: 12px;
+	--ink: #2b1d14;
+	--ink-soft: #5c4636;
+	--kraft: #e8d2ae;
+	--kraft-edge: #c9a879;
+	--field: #f6e9d2;
+	--tag: #fffdf7;
+	--twine: #8a6a4a;
+	--wax: #a4161a;
+	--wax-dark: #7c0f13;
+	--gold: #c9a24c;
+	--radius: 10px;
+	--display: "Young Serif", Georgia, serif;
+	--hand: "Caveat", "Segoe Print", cursive;
 }
 
 *,
@@ -23,84 +44,220 @@
 }
 
 html {
-	min-height: 100%;
-	background: #888;
+	background: var(--paper-color, #1e4634);
 }
 
 body {
 	margin: 0;
 	min-height: 100vh;
-	padding: 48px 16px 96px;
-	color: var(--fg);
+	padding: 40px 16px 72px;
+	background: var(--paper-color) var(--paper);
+	color: var(--ink);
 	font:
-		300 1rem / 1.45 system-ui,
+		400 1rem / 1.5 system-ui,
 		sans-serif;
 }
 
-/* The photo sits on its own fixed layer: iOS Safari ignores background-attachment: fixed. */
-body::before {
-	content: "";
-	position: fixed;
-	z-index: -1;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100lvh;
-	background: var(--bg-sm) center / cover no-repeat;
-}
-
-@media (min-width: 1000px) {
-	body::before {
-		background-image: var(--bg-lg);
-	}
-}
-
+/* the kraft paper card that holds all content */
 main {
-	position: relative;
-	z-index: 1;
-	max-width: 40rem;
-	margin-inline: var(--panel-start) var(--panel-end);
-	padding: 8px 32px 32px;
-	border-radius: 30px;
-	background: var(--panel);
-	backdrop-filter: var(--glass);
-	-webkit-backdrop-filter: var(--glass);
+	max-width: 36rem;
+	margin: 0 auto;
+	padding: 8px 32px 24px;
+	border-radius: 14px;
+	background: var(--kraft);
+	box-shadow:
+		0 1px 0 rgb(255 255 255 / 0.4) inset,
+		0 22px 48px -18px rgb(0 0 0 / 0.55);
 }
 
-@media (max-width: 700px) {
-	main {
-		margin-inline: auto;
-		padding: 4px 20px 24px;
+@media (max-width: 600px) {
+	body {
+		padding: 28px 18px 48px;
 	}
+
+	main {
+		padding: 4px 20px 20px;
+	}
+}
+
+/* --- type --- */
+
+h1,
+h2 {
+	font-family: var(--display);
+	font-weight: 400;
+	line-height: 1.15;
+	letter-spacing: -0.01em;
+	/* long German compounds like "Datenschutzerklärung" must not overflow on phones */
+	hyphens: auto;
+	overflow-wrap: break-word;
 }
 
 h1 {
-	font-size: 1.9rem;
-	font-weight: 600;
-	line-height: 1.25;
-	margin: 1.5rem 0 1rem;
+	font-size: 2.1rem;
+	margin: 1.4rem 0 0.8rem;
 }
 
 h2 {
-	font-size: 1.25rem;
-	font-weight: 600;
-	line-height: 1.3;
-	margin: 1.75rem 0 0.75rem;
+	font-size: 1.35rem;
+	margin: 1.9rem 0 0.7rem;
 }
 
-a,
+a {
+	color: var(--wax);
+	text-underline-offset: 3px;
+}
+
 b {
+	font-weight: 700;
+}
+
+.lead {
+	font-size: 1.15rem;
+	color: var(--ink-soft);
+}
+
+.aside {
+	font-size: 0.9rem;
+	color: var(--ink-soft);
+}
+
+:focus-visible {
+	outline: 3px solid var(--ink);
+	outline-offset: 2px;
+}
+
+/* --- start page --- */
+
+.hero {
+	text-align: center;
+	padding-bottom: 0.5rem;
+}
+
+.hero h1 {
+	font-size: clamp(2.6rem, 11vw, 3.4rem);
+	margin: 1.6rem 0 0.6rem;
+}
+
+.steps {
+	display: grid;
+	gap: 0.5rem;
+	padding-inline-start: 1.4rem;
+}
+
+.steps li {
+	padding-left: 0.3rem;
+}
+
+.steps li::marker {
+	font-family: var(--display);
+	color: var(--wax);
+}
+
+/* --- gift tags: the signature element --- */
+
+.tag {
+	position: relative;
+	display: inline-block;
+	margin: 1rem 0 1.2rem 34px;
+	transform: rotate(-2deg);
+	filter: drop-shadow(0 6px 8px rgb(60 30 10 / 0.28));
+}
+
+/* the string: string.svg ends at (42, 22), placed exactly on the hole at (18px, 50%) */
+.tag::before {
+	content: "";
+	position: absolute;
+	z-index: 1;
+	left: -24px;
+	top: calc(50% - 22px);
+	width: 44px;
+	height: 30px;
+	background: url(/static/string.svg) 0 0 / 100% 100% no-repeat;
+}
+
+.hero .tag {
+	transform: rotate(-4deg);
+}
+
+.tag-paper {
+	display: flex;
+	flex-direction: column;
+	padding: 12px 28px 14px 44px;
+	background:
+		radial-gradient(circle at 18px 50%, var(--kraft) 0 5px, var(--kraft-edge) 5px 6.5px, transparent 7px), var(--tag);
+	clip-path: polygon(24px 0, 100% 0, 100% 100%, 24px 100%, 0 50%);
+	border-radius: 0 6px 6px 0;
+	font-family: var(--hand);
 	font-weight: 600;
-	color: inherit;
+	text-align: left;
 }
 
-ol {
-	padding-inline-start: 1.25rem;
+.tag-line {
+	display: flex;
+	align-items: baseline;
+	gap: 0.4em;
 }
 
-li + li {
-	margin-top: 0.4rem;
+.tag-label {
+	font-size: 1.25rem;
+	color: var(--ink-soft);
+	min-width: 2.2em;
 }
+
+.tag-value {
+	font-size: 2.2rem;
+	line-height: 1.1;
+	color: var(--ink);
+	overflow-wrap: anywhere;
+}
+
+.tag-small {
+	margin: 0.2rem 0 0.4rem 22px;
+}
+
+.tag-small::before {
+	/* scaled to 32x22: the end moves to (30.5, 16), the hole is at (13px, 50%) */
+	left: -17.5px;
+	top: calc(50% - 16px);
+	width: 32px;
+	height: 22px;
+}
+
+.tag-small .tag-paper {
+	padding: 6px 16px 8px 32px;
+	background:
+		radial-gradient(circle at 13px 50%, var(--kraft) 0 3.5px, var(--kraft-edge) 3.5px 5px, transparent 5.5px),
+		var(--tag);
+	clip-path: polygon(17px 0, 100% 0, 100% 100%, 17px 100%, 0 50%);
+}
+
+.tag-small .tag-label {
+	font-size: 1rem;
+}
+
+.tag-small .tag-value {
+	font-size: 1.35rem;
+}
+
+.tag-mine .tag-paper {
+	background:
+		radial-gradient(circle at 13px 50%, var(--kraft) 0 3.5px, var(--kraft-edge) 3.5px 5px, transparent 5.5px), #ffe9a8;
+}
+
+.result {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 12px;
+	list-style: none;
+	padding: 0;
+}
+
+.result li:nth-child(even) .tag {
+	transform: rotate(1.5deg);
+}
+
+/* --- forms --- */
 
 fieldset {
 	border: 0;
@@ -118,64 +275,56 @@ select {
 	width: 100%;
 	margin: 0.5rem 0;
 	padding: 10px 12px;
-	border: 2px solid transparent;
+	border: 2px solid var(--kraft-edge);
 	border-radius: var(--radius);
 	background: var(--field);
-	color: inherit;
+	color: var(--ink);
 	font: inherit;
-	font-size: 1.15rem;
-	font-weight: 500;
+	font-size: 1.1rem;
 }
 
-select option {
-	color: #000;
-}
-
-input[type="text"]:hover,
-select:hover {
-	background: var(--field-hover);
-}
-
-:focus-visible {
-	outline: 2px solid var(--fg);
-	outline-offset: 2px;
+input[type="text"]:focus,
+select:focus {
+	border-color: var(--ink);
 }
 
 button,
 .button {
 	display: inline-block;
 	margin: 0.75rem 0;
-	padding: 10px 20px;
-	border: 2px solid var(--fg);
+	padding: 11px 22px;
+	border: 2px solid var(--wax);
 	border-radius: var(--radius);
-	background: var(--fg);
-	color: var(--fg-inverse);
+	background: var(--wax);
+	color: #fff;
 	font: inherit;
-	font-size: 1.15rem;
-	font-weight: 600;
+	font-size: 1.1rem;
+	font-weight: 700;
 	text-decoration: none;
 	cursor: pointer;
 	transition:
-		background-color 0.1s,
-		color 0.1s;
+		background-color 0.12s,
+		border-color 0.12s,
+		color 0.12s;
 }
 
 button:hover,
 .button:hover {
-	background: transparent;
-	color: var(--fg);
+	background: var(--wax-dark);
+	border-color: var(--wax-dark);
 }
 
 button.secondary,
 .button.secondary {
 	background: transparent;
-	color: var(--fg);
+	border-color: var(--ink);
+	color: var(--ink);
 }
 
 button.secondary:hover,
 .button.secondary:hover {
-	background: var(--fg);
-	color: var(--fg-inverse);
+	background: var(--ink);
+	color: var(--kraft);
 }
 
 /* compact, but still at least 44px high: the recommended minimum for touch */
@@ -186,34 +335,25 @@ button.small {
 	font-size: 0.9rem;
 }
 
+/* keeps the main action reachable while scrolling through the choices */
+button.sticky {
+	position: sticky;
+	bottom: 16px;
+	box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+}
+
 .error {
 	padding: 10px 14px;
 	border-radius: var(--radius);
-	background: var(--error);
+	background: var(--wax);
 	color: #fff;
-	font-weight: 500;
+	font-weight: 600;
 }
 
-.codename {
-	font-size: 1.6rem;
-	font-weight: 700;
-	line-height: 1.25;
-	margin: 1rem 0;
-}
-
-.themes {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-	gap: 6px;
-}
-
+/* code name lists on the start page */
 .lists {
 	display: grid;
 	gap: 6px;
-}
-
-.lists legend {
-	grid-column: 1 / -1;
 }
 
 .lists label {
@@ -221,40 +361,37 @@ button.small {
 	align-items: flex-start;
 	gap: 10px;
 	min-height: 44px;
-	padding: 8px 12px;
+	padding: 9px 12px;
 	border: 2px solid transparent;
 	border-radius: var(--radius);
 	background: var(--field);
 	cursor: pointer;
 }
 
-.lists label:hover {
-	background: var(--field-hover);
-}
-
 .lists label:has(input:checked) {
-	border-color: var(--fg);
+	border-color: var(--ink);
 }
 
 .lists input {
 	margin: 4px 0 0;
-	accent-color: var(--fg);
+	accent-color: var(--wax);
 }
 
 .lists small {
-	opacity: 0.8;
+	color: var(--ink-soft);
 }
 
 .capacity {
 	white-space: nowrap;
 	font-size: 0.9rem;
+	color: var(--ink-soft);
 }
 
-/* keeps the main action reachable while scrolling through the designs */
-button.sticky {
-	position: sticky;
-	bottom: 16px;
-	box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
+/* wrapping paper picker */
+.themes {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+	gap: 12px 10px;
 }
 
 .themes legend {
@@ -263,6 +400,9 @@ button.sticky {
 
 .themes label {
 	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 	cursor: pointer;
 }
 
@@ -271,27 +411,36 @@ button.sticky {
 	opacity: 0;
 }
 
-.themes img {
+.swatch {
 	display: block;
-	width: 100%;
-	height: auto;
-	border: 3px solid transparent;
-	border-radius: 6px;
+	aspect-ratio: 4 / 3;
+	border-radius: 8px;
+	background: var(--paper-color) var(--paper);
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
 }
 
-.themes label:hover img {
-	border-color: var(--field-hover);
+.swatch-label {
+	font-size: 0.85rem;
+	line-height: 1.2;
+	color: var(--ink-soft);
 }
 
-.themes input:checked + img {
-	border-color: var(--fg);
-}
-
-.themes input:focus-visible + img {
-	outline: 2px solid var(--fg);
+.themes input:checked + .swatch {
+	outline: 3px solid var(--ink);
 	outline-offset: 2px;
 }
 
+.themes input:checked ~ .swatch-label {
+	color: var(--ink);
+	font-weight: 700;
+}
+
+.themes input:focus-visible + .swatch {
+	outline: 3px solid var(--wax);
+	outline-offset: 2px;
+}
+
+/* links with copy and share buttons */
 .copy {
 	margin: 1rem 0;
 }
@@ -304,7 +453,6 @@ button.sticky {
 /* at least 16px, otherwise iOS zooms in when the field is tapped */
 .copy input {
 	font-size: 1rem;
-	font-weight: 400;
 	text-overflow: ellipsis;
 }
 
@@ -318,6 +466,7 @@ button.sticky {
 	margin: 0;
 }
 
+/* participants and exclusions on the admin page */
 .list {
 	list-style: none;
 	padding: 0;
@@ -329,11 +478,7 @@ button.sticky {
 	align-items: center;
 	gap: 8px;
 	padding: 6px 0;
-	border-bottom: 1px solid var(--field-hover);
-}
-
-.list li + li {
-	margin: 0;
+	border-bottom: 1px dashed var(--kraft-edge);
 }
 
 .pair {
@@ -363,35 +508,15 @@ button.sticky {
 	}
 }
 
-.result {
-	list-style: none;
-	padding: 0;
-}
-
-.result .me {
-	padding: 4px 8px;
-	margin-inline: -8px;
-	border-radius: 8px;
-	background: var(--field-hover);
-}
-
 footer {
 	margin-top: 2rem;
-	padding-top: 0.75rem;
-	border-top: 1px solid var(--field-hover);
+	padding-top: 0.5rem;
+	border-top: 1px dashed var(--kraft-edge);
 	font-size: 0.9rem;
 }
 
 footer a {
 	display: inline-block;
 	padding: 12px 0;
-	font-weight: 400;
-}
-
-#snow {
-	position: fixed;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	pointer-events: none;
+	color: var(--ink-soft);
 }

@@ -1,44 +1,22 @@
 import { pick } from './random.ts';
 
+/** A wrapping paper: the page background, tiled from public/static/paper/<id>.svg */
 export interface Theme {
 	id: string;
-	/** Dark background photo → light text. */
-	dark: boolean;
-	/** Where the content panel sits so the photo's motif stays visible. */
-	align: 'left' | 'center';
+	label: string;
+	/** Main color of the paper, shown while the pattern loads and as the browser bar color */
+	color: string;
 }
 
-// Background photos live in assets/backgrounds/<id>.jpg; run `npm run images` after adding one.
 export const THEMES: readonly Theme[] = [
-	{ id: 'bag', dark: false, align: 'left' },
-	{ id: 'ball', dark: true, align: 'left' },
-	{ id: 'candle', dark: true, align: 'left' },
-	{ id: 'christmas1', dark: false, align: 'left' },
-	{ id: 'christmas2', dark: false, align: 'left' },
-	{ id: 'christmas3', dark: false, align: 'left' },
-	{ id: 'decoration', dark: false, align: 'left' },
-	{ id: 'gift1', dark: false, align: 'left' },
-	{ id: 'gift2', dark: false, align: 'left' },
-	{ id: 'gift3', dark: false, align: 'left' },
-	{ id: 'santa', dark: false, align: 'left' },
-	{ id: 'silver', dark: false, align: 'center' },
-	{ id: 'snow1', dark: false, align: 'center' },
-	{ id: 'snow2', dark: false, align: 'center' },
-	{ id: 'snow3', dark: false, align: 'center' },
-	{ id: 'snowfall', dark: false, align: 'center' },
-	{ id: 'snowflake', dark: false, align: 'left' },
-	{ id: 'snowman', dark: false, align: 'left' },
-	{ id: 'tree1', dark: true, align: 'left' },
-	{ id: 'tree2', dark: false, align: 'left' },
-	{ id: 'tree3', dark: true, align: 'left' },
-	{ id: 'tree4', dark: false, align: 'left' },
-	{ id: 'tree5', dark: false, align: 'left' },
-	{ id: 'tree6', dark: false, align: 'left' },
-	{ id: 'tree7', dark: false, align: 'left' },
-	{ id: 'tree8', dark: false, align: 'left' },
-	{ id: 'tree9', dark: false, align: 'left' },
-	{ id: 'wood1', dark: true, align: 'left' },
-	{ id: 'wood2', dark: false, align: 'left' },
+	{ id: 'tanne', label: 'Tannengrün', color: '#1e4634' },
+	{ id: 'zuckerstange', label: 'Zuckerstange', color: '#b3241e' },
+	{ id: 'schnee', label: 'Schneeflocken', color: '#1d2b4f' },
+	{ id: 'wald', label: 'Tannenwald', color: '#d3e6d8' },
+	{ id: 'karo', label: 'Holzfällerkaro', color: '#a3201b' },
+	{ id: 'bordeaux', label: 'Bordeaux & Gold', color: '#5a1424' },
+	{ id: 'lebkuchen', label: 'Lebkuchen', color: '#8b5a36' },
+	{ id: 'punkte', label: 'Rote Punkte', color: '#ffffff' },
 ];
 
 const byId = new Map(THEMES.map((t) => [t.id, t]));
@@ -51,14 +29,14 @@ export function randomTheme(): Theme {
 	return pick(THEMES);
 }
 
-/** Per-theme CSS: background images and tone. Written to public/static/themes.css by `npm run themes`. */
+/** A theme by id; unknown ids (e.g. of retired designs) get the first one. */
+export function themeOrDefault(id: string): Theme {
+	return byId.get(id) ?? (THEMES[0] as Theme);
+}
+
+/** Per-theme CSS variables. Written to public/static/themes.css by `npm run themes`. */
 export function themesCss(): string {
 	return THEMES.map(
-		({ id, dark, align }) =>
-			`[data-theme="${id}"]{--bg-sm:url(/static/img/bg/${id}-sm.webp);--bg-lg:url(/static/img/bg/${id}-lg.webp)}` +
-			`[data-theme="${id}"]{${dark ? '--fg:#fff;--fg-inverse:#000;--field:rgb(255 255 255/.12);--field-hover:rgb(255 255 255/.22);--glass:blur(15px) brightness(80%);--panel:rgb(0 0 0/.3)' : ''}}` +
-			(align === 'center' ? `[data-theme="${id}"]{--panel-start:auto;--panel-end:auto}` : ''),
-	)
-		.join('\n')
-		.replace(/\[data-theme="[^"]+"\]\{\}/g, '');
+		({ id, color }) => `[data-theme="${id}"]{--paper-color:${color};--paper:url(/static/paper/${id}.svg)}`,
+	).join('\n');
 }

@@ -30,8 +30,8 @@ app.use(
 		onFound: (path, c) => {
 			c.header(
 				'Cache-Control',
-				path.includes('/static/img/')
-					? 'public, max-age=2592000'
+				path.includes('/static/fonts/')
+					? 'public, max-age=31536000, immutable'
 					: 'public, max-age=3600, stale-while-revalidate=86400',
 			);
 		},

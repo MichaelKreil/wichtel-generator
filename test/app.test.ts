@@ -8,7 +8,7 @@ import { codeNamesFor, DEFAULT_LIST_ID, getCodeNameList } from '../src/codenames
 import { NodeDatabase } from '../src/db-node.ts';
 import { memoryRateLimiter } from '../src/rate-limit.ts';
 import { Store } from '../src/store.ts';
-import { themesCss } from '../src/themes.ts';
+import { THEMES, themesCss } from '../src/themes.ts';
 
 const BASE = 'http://localhost';
 let app: Hono;
@@ -32,7 +32,7 @@ function get(path: string, headers: Record<string, string> = {}) {
 }
 
 async function createPot(): Promise<{ potPath: string; adminPath: string }> {
-	const res = await post('/neu', { theme: 'candle' });
+	const res = await post('/neu', { theme: 'schnee' });
 	assert.equal(res.status, 303);
 	const adminPath = new URL(res.headers.get('location') ?? '', BASE).pathname;
 	const potPath = adminPath.replace(/\/admin\/.*/, '');
@@ -62,7 +62,7 @@ describe('app', () => {
 
 		const admin = await (await get(`${adminPath}?neu`)).text();
 		assert.match(admin, /Wichteltopf angelegt/);
-		assert.match(admin, /data-theme="candle"/);
+		assert.match(admin, /data-theme="schnee"/);
 		assert.ok(admin.includes(`http://localhost${potPath}`));
 
 		const anna = await join(potPath, 'Anna');
@@ -101,11 +101,11 @@ describe('app', () => {
 		const result = await (await get(anna.personalPath)).text();
 		assert.match(result, /Die Ziehung ist abgeschlossen/);
 		assert.match(result, /Du beschenkst/);
-		assert.equal(result.match(/« beschenkt/g)?.length, 4);
+		assert.equal(result.match(/class="tag tag-small/g)?.length, 4);
 
 		const publicResult = await (await get(potPath)).text();
 		assert.ok(!publicResult.includes('Du beschenkst'));
-		assert.equal(publicResult.match(/« beschenkt/g)?.length, 4);
+		assert.equal(publicResult.match(/class="tag tag-small/g)?.length, 4);
 
 		// no more joining
 		assert.equal((await join(potPath, 'Dora')).res.status, 303);
@@ -160,7 +160,7 @@ describe('rate limiting', () => {
 		const create = (ip: string) =>
 			app.request(`${BASE}/neu`, {
 				method: 'POST',
-				body: new URLSearchParams({ theme: 'bag' }),
+				body: new URLSearchParams({ theme: 'tanne' }),
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: BASE, 'cf-connecting-ip': ip },
 			});
 		assert.equal((await create('1.1.1.1')).status, 303);
@@ -310,21 +310,35 @@ describe('code name lists', () => {
 	});
 
 	it('uses the chosen list for the pot', async () => {
-		const res = await post('/neu', { theme: 'bag', codenames: 'mittelerde' });
+		const res = await post('/neu', { theme: 'tanne', codenames: 'mittelerde' });
 		const adminPath = new URL(res.headers.get('location') ?? '', BASE).pathname;
 		const potPath = adminPath.replace(/\/admin\/.*/, '');
 		const anna = await join(potPath, 'Anna');
-		const codeName = anna.html.match(/<p class="codename">([^<]+)<\/p>/)?.[1] ?? '';
+		const codeName = anna.html.match(/Von:<\/span> <span class="tag-value">([^<]+)<\/span>/)?.[1] ?? '';
 		assert.ok(getCodeNameList('mittelerde')?.names.includes(codeName), codeName);
 		assert.match(await (await get(adminPath)).text(), /Im Topf \(1 von max\. 43\)/);
 	});
 
 	it('falls back to the default list for unknown ids', async () => {
-		const forms: Record<string, string>[] = [{ theme: 'bag', codenames: 'nope' }, { theme: 'bag' }];
+		const forms: Record<string, string>[] = [{ theme: 'tanne', codenames: 'nope' }, { theme: 'tanne' }];
 		for (const form of forms) {
 			const res = await post('/neu', form);
 			const potId = new URL(res.headers.get('location') ?? '', BASE).pathname.split('/')[1] ?? '';
 			assert.equal((await store.getPot(potId))?.codeNameList, DEFAULT_LIST_ID);
 		}
+	});
+});
+
+describe('wrapping papers', () => {
+	it('shows pots of retired designs with a current wrapping paper', async () => {
+		const pot = await store.createPot('snowman', DEFAULT_LIST_ID);
+		const html = await (await get(`/${pot.id}`)).text();
+		assert.match(html, /<body data-theme="tanne">/);
+		assert.match(html, /<meta name="theme-color" content="#1e4634">/);
+	});
+
+	it('offers all papers on the start page', async () => {
+		const html = await (await get('/')).text();
+		for (const theme of THEMES) assert.ok(html.includes(`<span class="swatch" data-theme="${theme.id}">`), theme.id);
 	});
 });

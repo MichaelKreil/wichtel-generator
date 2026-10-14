@@ -10,7 +10,7 @@ export interface Demo {
 }
 
 export const DEMO: Demo = {
-	theme: 'snowman',
+	theme: 'tanne',
 	codeNames: 'waldtiere',
 	participants: ['Anna Schmidt', 'Ben Müller', 'Carla Weiß', 'David Fischer', 'Emma Wagner'],
 	exclusions: [['Anna Schmidt', 'Ben Müller']],

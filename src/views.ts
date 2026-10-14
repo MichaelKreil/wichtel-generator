@@ -3,7 +3,7 @@ import type { HtmlEscapedString } from 'hono/utils/html';
 import { CODE_NAME_LISTS, DEFAULT_LIST_ID } from './codenames.ts';
 import { OPERATOR } from './operator.ts';
 import { type Exclusion, MAX_NAME_LENGTH, MIN_PARTICIPANTS, type Participant } from './store.ts';
-import { THEMES } from './themes.ts';
+import { THEMES, themeOrDefault } from './themes.ts';
 
 type Html = HtmlEscapedString | Promise<HtmlEscapedString>;
 
@@ -35,11 +35,11 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>${title} · Wichtel-Generator</title>
+	<title>${title} · Wichteltopf</title>
 	<meta name="description" content="${description}">
 	${options.index ? '' : html`<meta name="robots" content="noindex">`}
 	<meta property="og:type" content="website">
-	<meta property="og:site_name" content="Wichtel-Generator">
+	<meta property="og:site_name" content="Wichteltopf">
 	<meta property="og:title" content="${title}">
 	<meta property="og:description" content="${description}">
 	<meta property="og:image" content="${page.origin}/static/og.jpg">
@@ -48,7 +48,9 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 	<meta name="twitter:card" content="summary_large_image">
 	<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-	<meta name="theme-color" content="#a4161a">
+	<meta name="theme-color" content="${themeOrDefault(page.theme).color}">
+	<link rel="preload" href="/static/fonts/young-serif-400.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/static/fonts/caveat-600.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/themes.css">
 	<script src="/static/app.js" defer></script>
@@ -58,7 +60,6 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 		${content}
 		<footer><a href="/datenschutz">Datenschutz</a></footer>
 	</main>
-	<canvas id="snow" aria-hidden="true"></canvas>
 </body>
 </html>`;
 }
@@ -67,6 +68,18 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 function joinNames(names: string[]): string {
 	if (names.length <= 1) return names.join('');
 	return `${names.slice(0, -1).join(', ')} und ${names.at(-1)}`;
+}
+
+/**
+ * A paper gift tag with a punched hole and string, written by hand: the signature element.
+ * Each line is a label ("Von:", "Für:") and a value.
+ */
+function giftTag(lines: [string, string][], size: 'big' | 'small' = 'big', mine = false): Html {
+	return html`<div class="tag tag-${size}${mine ? ' tag-mine' : ''}">
+		<div class="tag-paper">
+			${lines.map(([label, value]) => html`<span class="tag-line"><span class="tag-label">${label}</span> <span class="tag-value">${value}</span></span>`)}
+		</div>
+	</div>`;
 }
 
 /** A link with copy button, and a share button (where the device supports it) if `shareText` is given. */
@@ -84,16 +97,22 @@ export function startPage(page: Page): Html {
 	return layout(
 		page,
 		'Wichteltopf anlegen',
-		html`<h1>Wichtel-Generator</h1>
-		<p>Hier kannst du kostenlos einen Online-Wichteltopf einrichten.</p>
+		html`<div class="hero">
+			<h1>Wichteltopf</h1>
+			<p class="lead">Alle werfen ihren Namen in den Topf. Dann wird geheim ausgelost, wer wen beschenkt.</p>
+			${giftTag([
+				['Von:', '???'],
+				['Für:', 'dich'],
+			])}
+		</div>
 
-		<h2>Wie funktioniert es?</h2>
-		<p>Beim Wichteln, auch bekannt als Julklapp, Secret Santa oder &bdquo;Engerl und Bengerl&ldquo;, beschenken sich Freund*innen und Kolleg*innen gegenseitig.</p>
-		<ol>
-			<li>Du legst einen Wichteltopf an und bekommst zwei Links.</li>
-			<li>Den <b>Teilnahme-Link</b> schickst du an alle. Wer seinen Namen in den Topf wirft, bekommt einen geheimen Codenamen, den man sich merken muss und niemandem verraten darf.</li>
-			<li>Wenn alle dabei sind, schließt du mit dem <b>Admin-Link</b> den Topf. Jetzt wird ausgelost, und jeder Codename bekommt eine Person zugewiesen, die er beschenkt.</li>
+		<h2>So geht’s</h2>
+		<ol class="steps">
+			<li>Lege einen Topf an. Du bekommst einen <b>Teilnahme-Link</b> für alle und einen geheimen <b>Admin-Link</b> für dich.</li>
+			<li>Alle tragen sich ein und bekommen einen geheimen Codenamen.</li>
+			<li>Wenn alle dabei sind, schließt du den Topf. Jeder Codename bekommt eine Person, die er beschenkt.</li>
 		</ol>
+		<p class="aside">Auch bekannt als Julklapp, Secret Santa oder „Engerl und Bengerl“. Kostenlos und ohne Anmeldung.</p>
 
 		<form method="post" action="/neu">
 			<fieldset class="lists">
@@ -110,11 +129,12 @@ export function startPage(page: Page): Html {
 			</fieldset>
 
 			<fieldset class="themes">
-				<legend><h2>Wähle ein Design</h2></legend>
+				<legend><h2>Wähle ein Geschenkpapier</h2></legend>
 				${THEMES.map(
 					(t) => html`<label>
 						<input type="radio" name="theme" value="${t.id}" ${t.id === page.theme ? 'checked' : ''}>
-						<img src="/static/img/thumb/${t.id}.webp" alt="Design ${t.id}" width="384" height="256" loading="lazy">
+						<span class="swatch" data-theme="${t.id}"></span>
+						<span class="swatch-label">${t.label}</span>
 					</label>`,
 				)}
 			</fieldset>
@@ -291,8 +311,15 @@ export function personalPage({ page, participant, personalPath, personalUrl, isN
 			page,
 			'Ergebnis',
 			html`<h1>Die Ziehung ist abgeschlossen</h1>
-			<p>Hallo ${participant.name}, dein geheimer Codename ist <b>${participant.codeName}</b>.</p>
-			${mine ? html`<p class="codename">Du beschenkst ${mine.receiver}</p>` : ''}
+			<p>Hallo ${participant.name}! Du beschenkst:</p>
+			${
+				mine
+					? giftTag([
+							['Von:', participant.codeName],
+							['Für:', mine.receiver],
+						])
+					: ''
+			}
 			<h2>Alle Ergebnisse</h2>
 			${resultList(result, participant.codeName)}`,
 		);
@@ -302,8 +329,8 @@ export function personalPage({ page, participant, personalPath, personalUrl, isN
 		'Du bist dabei',
 		html`<h1>${isNew ? 'Schön, dass du mitmachst!' : 'Du bist dabei'}</h1>
 		<p>Du bist als <b>${participant.name}</b> im Topf. Dein geheimer Codename lautet:</p>
-		<p class="codename">${participant.codeName}</p>
-		<p>Verrate ihn niemandem, denn er ist geheim!</p>
+		${giftTag([['Von:', participant.codeName]])}
+		<p>Verrate ihn niemandem! Nach der Auslosung steht hier, für wen dein Geschenk ist.</p>
 		<h2>Dein persönlicher Link</h2>
 		<p>Speichere dir diesen Link. Damit siehst du jederzeit deinen Codenamen und nach der Auslosung, wen du beschenkst, auch auf einem anderen Gerät.</p>
 		${copyField('Persönlicher Link: nur für dich', personalUrl, 'Mein persönlicher Wichtel-Link:')}
@@ -316,11 +343,19 @@ export function personalPage({ page, participant, personalPath, personalUrl, isN
 	);
 }
 
+/** All assignments as small gift tags; the viewer's own one is highlighted. */
 function resultList(rows: ResultRow[], myCodeName?: string): Html {
 	return html`<ul class="result">
 		${rows.map(
 			(r) =>
-				html`<li ${r.codeName === myCodeName ? html`class="me"` : ''}>»<b>${r.codeName}</b>« beschenkt <b>${r.receiver}</b></li>`,
+				html`<li>${giftTag(
+					[
+						['Von:', r.codeName],
+						['Für:', r.receiver],
+					],
+					'small',
+					r.codeName === myCodeName,
+				)}</li>`,
 		)}
 	</ul>`;
 }
@@ -388,6 +423,6 @@ export function privacyPage(page: Page): Html {
 		<p>Du hast das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung, auf Widerspruch und auf Datenübertragbarkeit. Wende dich dafür an die oben genannte E-Mail-Adresse. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren.</p>
 
 		<p>Stand: Oktober 2026</p>`,
-		{ index: true, description: 'Welche Daten der Wichtel-Generator speichert und wie lange.' },
+		{ index: true, description: 'Welche Daten der Wichteltopf speichert und wie lange.' },
 	);
 }

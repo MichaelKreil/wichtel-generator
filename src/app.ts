@@ -7,7 +7,7 @@ import { DEFAULT_LIST_ID, getCodeNameList } from './codenames.ts';
 import { safeEqual } from './random.ts';
 import type { RateLimiters } from './rate-limit.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
-import { getTheme, randomTheme } from './themes.ts';
+import { getTheme, randomTheme, themeOrDefault } from './themes.ts';
 import {
 	adminPage,
 	messagePage,
@@ -42,7 +42,11 @@ export function createApp({ store, baseUrl, rateLimiters, clientIp = () => '' }:
 		const proto = c.req.header('x-forwarded-proto') ?? url.protocol.replace(':', '');
 		return `${proto}://${c.req.header('host') ?? url.host}`;
 	};
-	const page = (c: Context, theme: string = randomTheme().id): Page => ({ theme, origin: origin(c) });
+	// pots of retired designs get a current one
+	const page = (c: Context, theme: string = randomTheme().id): Page => ({
+		theme: themeOrDefault(theme).id,
+		origin: origin(c),
+	});
 	const notFound = (c: Context) =>
 		c.html(
 			messagePage(
