@@ -233,10 +233,13 @@ b {
 }
 
 .tag-value {
-	font-size: 2.2rem;
+	/* a bit smaller on narrow phones, so names like "Siebenschläfer" fit on one line */
+	font-size: clamp(1.7rem, 8vw, 2.2rem);
 	line-height: 1.1;
 	color: var(--ink);
-	overflow-wrap: anywhere;
+	/* very long names break at syllables, not between arbitrary letters */
+	hyphens: auto;
+	overflow-wrap: break-word;
 }
 
 .tag-small {
