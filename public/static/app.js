@@ -45,14 +45,19 @@ for (const form of document.querySelectorAll('form[data-confirm]')) {
 	let flakes = [];
 
 	function resize() {
-		const dpr = window.devicePixelRatio || 1;
+		// more than 2x is invisible for snowflakes, but costs a lot of pixels on phones
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+		const widthChanged = canvas.clientWidth !== width;
 		width = canvas.clientWidth;
 		height = canvas.clientHeight;
 		canvas.width = width * dpr;
 		canvas.height = height * dpr;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		const count = Math.round((width * height) / 12000);
-		flakes = Array.from({ length: count }, () => newFlake(Math.random() * height));
+		// Mobile browsers change the height while scrolling (address bar): keep the flakes then.
+		if (widthChanged) {
+			const count = Math.round((width * height) / 12000);
+			flakes = Array.from({ length: count }, () => newFlake(Math.random() * height));
+		}
 	}
 
 	function newFlake(y) {
