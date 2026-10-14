@@ -1,4 +1,3 @@
-
-backgrounds/original
-database/
 node_modules/
+database/
+*.sqlite*
