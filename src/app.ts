@@ -13,6 +13,7 @@ import {
 	type Page,
 	personalPage,
 	potPage,
+	privacyPage,
 	type ResultRow,
 	resultPage,
 	startPage,
@@ -96,6 +97,8 @@ export function createApp({ store, baseUrl, rateLimiters, clientIp = () => '' }:
 	app.get('/healthz', (c) => c.text('ok'));
 
 	app.get('/', (c) => c.html(startPage(page(c))));
+
+	app.get('/datenschutz', (c) => c.html(privacyPage(page(c))));
 
 	app.post('/neu', async (c) => {
 		const body = await c.req.parseBody();

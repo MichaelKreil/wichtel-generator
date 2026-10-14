@@ -91,6 +91,7 @@ const pages: Record<string, string> = {
 	'personal result': closed.personalPaths[0] as string,
 	'admin result': closed.adminPath,
 	'not found': '/does-not-exist',
+	privacy: '/datenschutz',
 };
 
 // --- drive Chrome via the DevTools protocol ---

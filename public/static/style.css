@@ -332,6 +332,19 @@ button.sticky {
 	background: var(--field-hover);
 }
 
+footer {
+	margin-top: 2rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid var(--field-hover);
+	font-size: 0.9rem;
+}
+
+footer a {
+	display: inline-block;
+	padding: 12px 0;
+	font-weight: 400;
+}
+
 #snow {
 	position: fixed;
 	inset: 0;

@@ -287,3 +287,13 @@ describe('input validation', () => {
 		assert.equal((await store.listParticipants(potPath.slice(1))).length, 1);
 	});
 });
+
+describe('privacy page', () => {
+	it('is linked from every page', async () => {
+		const res = await get('/datenschutz');
+		assert.equal(res.status, 200);
+		assert.match(await res.text(), /Datenschutzerklärung/);
+		assert.match(await (await get('/')).text(), /<a href="\/datenschutz">Datenschutz<\/a>/);
+		assert.match(await (await get('/Unknown-abcdefgh')).text(), /href="\/datenschutz"/);
+	});
+});

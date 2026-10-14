@@ -47,6 +47,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Check operator details on the privacy page
+        run: "! grep -q 'BITTE ERGÄNZEN' src/operator.ts || { echo 'Fill in src/operator.ts before deploying'; exit 1; }"
       - run: npm ci
       - run: npm run deploy
         env:
