@@ -17,6 +17,7 @@ npm run dev      # Node version: http://localhost:8080, restarts on change
 npm run cf:dev   # Cloudflare version with local D1: http://localhost:8787
 npm run check    # typecheck + lint + tests
 npm run test:mobile  # checks all pages at phone widths in headless Chrome
+npm run screenshots  # phone screenshots of all pages into screenshots/ (demo data: scripts/demo.ts)
 npm run format   # auto-format with Biome
 ```
 
