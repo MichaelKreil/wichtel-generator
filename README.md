@@ -45,7 +45,7 @@ Schema changes go into a new `migrations/NNNN_name.sql` file. Never edit an appl
 
 1. Put the photo into `assets/backgrounds/<id>.jpg`.
 2. Run `npm run images` (requires `cwebp`: `brew install webp`, and Google Chrome for the preview image and icons).
-3. Add `{ id, label, color, align }` to `src/themes.ts` and run `npm run themes`.
+3. Add `{ id, label, color, align }` to `src/themes.ts` and run `npm run assets`.
 Fonts in `public/static/fonts/` are under the SIL Open Font License (see the license files there).
 
 ## Deployment on Cloudflare (main)

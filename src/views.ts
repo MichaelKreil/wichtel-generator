@@ -1,5 +1,6 @@
 import { html } from 'hono/html';
 import type { HtmlEscapedString } from 'hono/utils/html';
+import { ASSET_VERSION } from './asset-version.ts';
 import { CODE_NAME_LISTS, DEFAULT_LIST_ID } from './codenames.ts';
 import { OPERATOR } from './operator.ts';
 import { type Exclusion, MAX_NAME_LENGTH, MIN_PARTICIPANTS, type Participant } from './store.ts';
@@ -51,9 +52,9 @@ function layout(page: Page, title: string, content: Html, options: LayoutOptions
 	<meta name="theme-color" content="${themeOrDefault(page.theme).color}">
 	<link rel="preload" href="/static/fonts/young-serif-400.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/static/fonts/caveat-600.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="stylesheet" href="/static/style.css">
-	<link rel="stylesheet" href="/static/themes.css">
-	<script src="/static/app.js" defer></script>
+	<link rel="stylesheet" href="/static/style.css?v=${ASSET_VERSION}">
+	<link rel="stylesheet" href="/static/themes.css?v=${ASSET_VERSION}">
+	<script src="/static/app.js?v=${ASSET_VERSION}" defer></script>
 </head>
 <body data-theme="${page.theme}">
 	<main>

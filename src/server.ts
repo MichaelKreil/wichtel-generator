@@ -30,7 +30,7 @@ app.use(
 		onFound: (path, c) => {
 			c.header(
 				'Cache-Control',
-				path.includes('/static/fonts/')
+				path.includes('/static/fonts/') || /\/static\/(style\.css|themes\.css|app\.js)$/.test(path)
 					? 'public, max-age=31536000, immutable'
 					: path.includes('/static/img/')
 						? 'public, max-age=2592000'

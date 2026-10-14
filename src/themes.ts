@@ -58,7 +58,7 @@ export function themeOrDefault(id: string): Theme {
 	return byId.get(id) ?? (THEMES[0] as Theme);
 }
 
-/** Per-theme CSS variables. Written to public/static/themes.css by `npm run themes`. */
+/** Per-theme CSS variables. Written to public/static/themes.css by `npm run assets`. */
 export function themesCss(): string {
 	return THEMES.map(
 		({ id, color, align }) =>

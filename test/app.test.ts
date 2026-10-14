@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
+import { assetVersion } from '../scripts/lib/assets.ts';
 import { createApp } from '../src/app.ts';
+import { ASSET_VERSION } from '../src/asset-version.ts';
 import { codeNamesFor, DEFAULT_LIST_ID, getCodeNameList } from '../src/codenames.ts';
 
 import { NodeDatabase } from '../src/db-node.ts';
@@ -217,10 +219,20 @@ describe('link previews', () => {
 	});
 });
 
-describe('themes.css', () => {
-	it('is up to date with src/themes.ts (run `npm run themes`)', () => {
+describe('generated assets (run `npm run assets` after changes)', () => {
+	it('themes.css is up to date with src/themes.ts', () => {
 		const file = readFileSync(new URL('../public/static/themes.css', import.meta.url), 'utf8');
 		assert.equal(file, `${themesCss()}\n`);
+	});
+
+	it('the asset version matches style.css, app.js and themes.css', () => {
+		assert.equal(ASSET_VERSION, assetVersion());
+	});
+
+	it('pages link CSS and JS with the version', async () => {
+		const html = await (await get('/')).text();
+		assert.ok(html.includes(`/static/style.css?v=${ASSET_VERSION}`));
+		assert.ok(html.includes(`/static/app.js?v=${ASSET_VERSION}`));
 	});
 });
 
