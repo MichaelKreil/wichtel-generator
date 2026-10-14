@@ -8,7 +8,7 @@ const WIDTHS = [320, 390];
 
 // long names are the hardest case for narrow layouts
 const LONG_NAMES: Demo = {
-	theme: 'snowman',
+	theme: 'tanne',
 	codeNames: 'schauspiel',
 	participants: ['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt', 'Carla Weiß', 'Maximilian von Hohenzollern'],
 	exclusions: [['Anna-Katharina Müller-Lüdenscheidt', 'Ben Schmidt']],
@@ -37,6 +37,15 @@ const audit = `(() => {
 	if (document.documentElement.scrollWidth > innerWidth)
 		problems.push('scrolls horizontally: ' + document.documentElement.scrollWidth + 'px content in ' + innerWidth + 'px');
 	const describe = (el) => el.tagName.toLowerCase() + ' "' + (el.textContent || el.value || '').trim().slice(0, 30) + '"';
+	// content that sticks out of the card (e.g. a long word in a heading)
+	const card = document.querySelector('main').getBoundingClientRect();
+	for (const el of document.querySelectorAll('main h1, main h2, main p, main li, main label, main input, main select, main button')) {
+		const box = el.getBoundingClientRect();
+		const outside = box.right > card.right + 1 || box.left < card.left - 1;
+		// the box may fit while its text overflows it (a few pixels are allowed for the rotated gift tags)
+		const overflowing = el.scrollWidth > el.clientWidth + 4 && getComputedStyle(el).overflowX === 'visible';
+		if (box.width && (outside || overflowing)) problems.push(describe(el) + ': sticks out of the card');
+	}
 	for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=radio]), select, textarea')) {
 		const size = parseFloat(getComputedStyle(el).fontSize);
 		if (size < 16) problems.push(describe(el) + ': font ' + size + 'px makes iOS zoom in');
