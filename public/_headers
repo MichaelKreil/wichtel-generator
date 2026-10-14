@@ -1,0 +1,8 @@
+# Cache rules for static files on Cloudflare (the Node server sets the same in src/server.ts).
+# CSS/JS keep their file names when they change, so they are only cached briefly.
+/static/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/static/img/*
+  ! Cache-Control
+  Cache-Control: public, max-age=2592000

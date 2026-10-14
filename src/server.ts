@@ -20,8 +20,14 @@ app.use(
 	'/static/*',
 	serveStatic({
 		root: new URL('../public', import.meta.url).pathname,
-		onFound: (_path, c) => {
-			c.header('Cache-Control', 'public, max-age=86400');
+		// same cache rules as public/_headers on Cloudflare
+		onFound: (path, c) => {
+			c.header(
+				'Cache-Control',
+				path.includes('/static/img/')
+					? 'public, max-age=2592000'
+					: 'public, max-age=3600, stale-while-revalidate=86400',
+			);
 		},
 	}),
 );
