@@ -287,6 +287,11 @@ export class Store {
 		throw new Error('pot keeps changing while closing');
 	}
 
+	/** Deletes a pot with all participants, exclusions and results. */
+	async deletePot(potId: string): Promise<void> {
+		await this.#db.batch([sql('DELETE FROM pots WHERE id = ?', potId)]);
+	}
+
 	/** Deletes pots without activity since `cutoff` (ms timestamp). Returns the number of deleted pots. */
 	async deleteInactiveSince(cutoff: number): Promise<number> {
 		const [deleted] = await this.#db.batch([sql('DELETE FROM pots WHERE updated_at < ?', cutoff)]);

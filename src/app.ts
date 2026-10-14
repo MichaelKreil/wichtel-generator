@@ -1,6 +1,6 @@
 import { type Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { getCookie, setCookie } from 'hono/cookie';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
@@ -10,7 +10,7 @@ import { canDraw, cleanName, type Participant, type Pot, type Store } from './st
 import { getTheme, randomTheme } from './themes.ts';
 import {
 	adminPage,
-	errorPage,
+	messagePage,
 	type Page,
 	personalPage,
 	potPage,
@@ -42,7 +42,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	const page = (c: Context, theme: string = randomTheme().id): Page => ({ theme, origin: origin(c) });
 	const notFound = (c: Context) =>
 		c.html(
-			errorPage(
+			messagePage(
 				page(c),
 				'Seite nicht gefunden',
 				'Hast du den richtigen Link geöffnet? Alte Wichteltöpfe werden nach einiger Zeit gelöscht.',
@@ -77,7 +77,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		const limiter = c.req.path === '/neu' ? rateLimiters.create : rateLimiters.write;
 		if (await limiter(ip)) return next();
 		return c.html(
-			errorPage(page(c), 'Zu viele Anfragen', 'Bitte warte eine Minute und versuche es dann noch einmal.', false),
+			messagePage(page(c), 'Zu viele Anfragen', 'Bitte warte eine Minute und versuche es dann noch einmal.', false),
 			429,
 		);
 	});
@@ -130,10 +130,25 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 			personalPage({
 				page: page(c, pot.theme),
 				participant: me,
+				personalPath: personalPath(pot, me),
 				personalUrl: origin(c) + personalPath(pot, me),
 				isNew: c.req.query('neu') !== undefined,
 				result: pot.closedAt !== null ? results(participants) : undefined,
 			}),
+		);
+	});
+
+	app.post('/:pot/ich/:token/austragen', async (c) => {
+		const pot = await store.getPot(c.req.param('pot'));
+		if (!pot) return notFound(c);
+		const me = findByToken(await store.listParticipants(pot.id), c.req.param('token'));
+		if (!me) return notFound(c);
+		// after the draw, removing someone would break the assignment
+		if (pot.closedAt !== null) return c.redirect(personalPath(pot, me), 303);
+		await store.removeParticipant(pot, me.id);
+		deleteCookie(c, cookieName(pot), { path: '/' });
+		return c.html(
+			messagePage(page(c, pot.theme), 'Du bist ausgetragen', 'Dein Name wurde aus dem Wichteltopf gelöscht.', false),
 		);
 	});
 
@@ -240,6 +255,13 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
+	admin.post('/loeschen', async (c) => {
+		await store.deletePot(c.var.pot.id);
+		return c.html(
+			messagePage(page(c), 'Topf gelöscht', 'Der Wichteltopf wurde mit allen Namen und Ergebnissen gelöscht.'),
+		);
+	});
+
 	app.route('/:pot/admin/:token', admin);
 
 	app.notFound(notFound);
@@ -248,7 +270,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		if (error instanceof HTTPException) return error.getResponse();
 		console.error(error);
 		return c.html(
-			errorPage(page(c), 'Da ist etwas schiefgelaufen', 'Bitte versuche es in ein paar Minuten noch einmal.', false),
+			messagePage(page(c), 'Da ist etwas schiefgelaufen', 'Bitte versuche es in ein paar Minuten noch einmal.', false),
 			500,
 		);
 	});

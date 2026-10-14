@@ -225,3 +225,33 @@ describe('admin links by mail', () => {
 		assert.ok(body.includes(`http://localhost${adminPath}\n`));
 	});
 });
+
+describe('deleting data', () => {
+	it('lets the admin delete the whole pot', async () => {
+		const { potPath, adminPath } = await createPot();
+		await join(potPath, 'Anna');
+		const res = await post(`${adminPath}/loeschen`, {});
+		assert.equal(res.status, 200);
+		assert.match(await res.text(), /Topf gelöscht/);
+		assert.equal((await get(potPath)).status, 404);
+		assert.equal(await store.getPot(potPath.slice(1)), undefined);
+	});
+
+	it('lets participants remove themselves until the draw', async () => {
+		const { potPath, adminPath } = await createPot();
+		const anna = await join(potPath, 'Anna');
+		const res = await post(`${anna.personalPath}/austragen`, {});
+		assert.match(await res.text(), /Du bist ausgetragen/);
+		assert.match(res.headers.get('set-cookie') ?? '', /Max-Age=0/);
+		assert.equal((await store.listParticipants(potPath.slice(1))).length, 0);
+		assert.equal((await get(anna.personalPath)).status, 404);
+
+		// not after the draw
+		const ben = await join(potPath, 'Ben');
+		await join(potPath, 'Carla');
+		await join(potPath, 'Dora');
+		await post(`${adminPath}/schliessen`, {});
+		assert.equal((await post(`${ben.personalPath}/austragen`, {})).status, 303);
+		assert.equal((await store.listParticipants(potPath.slice(1))).length, 3);
+	});
+});

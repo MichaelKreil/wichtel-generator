@@ -213,7 +213,15 @@ export function adminPage(props: AdminPageProps): Html {
 			</form>`
 			}
 		</section>`
-		}`,
+		}
+
+		<section>
+			<h2>Topf löschen</h2>
+			<p>Löscht alle Namen${props.closed ? ' und das Ergebnis' : ''} endgültig. Ungenutzte Töpfe werden nach 90 Tagen automatisch gelöscht.</p>
+			<form method="post" action="${adminPath}/loeschen" data-confirm="Den Wichteltopf mit allen Namen endgültig löschen?">
+				<button type="submit" class="secondary">Topf löschen</button>
+			</form>
+		</section>`,
 	);
 }
 
@@ -248,6 +256,7 @@ export function potPage({ page, potPath, participants, error }: PotPageProps): H
 export interface PersonalPageProps {
 	page: Page;
 	participant: Participant;
+	personalPath: string;
 	personalUrl: string;
 	isNew: boolean;
 	/** Set once the pot is closed. */
@@ -255,7 +264,7 @@ export interface PersonalPageProps {
 }
 
 /** A participant's own page, reachable via their personal link from any device. */
-export function personalPage({ page, participant, personalUrl, isNew, result }: PersonalPageProps): Html {
+export function personalPage({ page, participant, personalPath, personalUrl, isNew, result }: PersonalPageProps): Html {
 	if (result) {
 		const mine = result.find((r) => r.codeName === participant.codeName);
 		return layout(
@@ -277,7 +286,13 @@ export function personalPage({ page, participant, personalUrl, isNew, result }: 
 		<p>Verrate ihn niemandem, denn er ist geheim!</p>
 		<h2>Dein persönlicher Link</h2>
 		<p>Speichere dir diesen Link. Damit siehst du jederzeit deinen Codenamen und nach der Auslosung, wen du beschenkst, auch auf einem anderen Gerät.</p>
-		${copyField('Persönlicher Link: nur für dich', personalUrl, 'Mein persönlicher Wichtel-Link:')}`,
+		${copyField('Persönlicher Link: nur für dich', personalUrl, 'Mein persönlicher Wichtel-Link:')}
+
+		<h2>Doch nicht dabei?</h2>
+		<p>Bis zur Auslosung kannst du dich wieder austragen. Dein Name wird dann gelöscht.</p>
+		<form method="post" action="${personalPath}/austragen" data-confirm="Wirklich aus dem Wichteltopf austragen?">
+			<button type="submit" class="secondary">Mich austragen</button>
+		</form>`,
 	);
 }
 
@@ -300,7 +315,7 @@ export function resultPage(page: Page, rows: ResultRow[]): Html {
 	);
 }
 
-export function errorPage(page: Page, title: string, text: string, offerNewPot = true): Html {
+export function messagePage(page: Page, title: string, text: string, offerNewPot = true): Html {
 	return layout(
 		page,
 		title,
