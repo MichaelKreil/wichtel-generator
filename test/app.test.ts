@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import type { Hono } from 'hono';
 import { createApp } from '../src/app.ts';
-import { codeNamesFor, getCodeNameList } from '../src/codenames.ts';
+import { codeNamesFor, DEFAULT_LIST_ID, getCodeNameList } from '../src/codenames.ts';
 
 import { NodeDatabase } from '../src/db-node.ts';
 import { memoryRateLimiter } from '../src/rate-limit.ts';
@@ -305,18 +305,18 @@ describe('privacy page', () => {
 describe('code name lists', () => {
 	it('shows each list with its capacity on the start page', async () => {
 		const html = await (await get('/')).text();
-		assert.match(html, /<b>Sterne<\/b> <span class="capacity">bis zu 38 Personen<\/span>/);
-		assert.match(html, /value="plaetzchen" checked/);
+		assert.match(html, /<b>Mittelerde<\/b> <span class="capacity">bis zu 43 Personen<\/span>/);
+		assert.match(html, new RegExp(`value="${DEFAULT_LIST_ID}" checked`));
 	});
 
 	it('uses the chosen list for the pot', async () => {
-		const res = await post('/neu', { theme: 'bag', codenames: 'sterne' });
+		const res = await post('/neu', { theme: 'bag', codenames: 'mittelerde' });
 		const adminPath = new URL(res.headers.get('location') ?? '', BASE).pathname;
 		const potPath = adminPath.replace(/\/admin\/.*/, '');
 		const anna = await join(potPath, 'Anna');
 		const codeName = anna.html.match(/<p class="codename">([^<]+)<\/p>/)?.[1] ?? '';
-		assert.ok(getCodeNameList('sterne')?.names.includes(codeName), codeName);
-		assert.match(await (await get(adminPath)).text(), /Im Topf \(1 von max\. 38\)/);
+		assert.ok(getCodeNameList('mittelerde')?.names.includes(codeName), codeName);
+		assert.match(await (await get(adminPath)).text(), /Im Topf \(1 von max\. 43\)/);
 	});
 
 	it('falls back to the default list for unknown ids', async () => {
@@ -324,7 +324,7 @@ describe('code name lists', () => {
 		for (const form of forms) {
 			const res = await post('/neu', form);
 			const potId = new URL(res.headers.get('location') ?? '', BASE).pathname.split('/')[1] ?? '';
-			assert.equal((await store.getPot(potId))?.codeNameList, 'plaetzchen');
+			assert.equal((await store.getPot(potId))?.codeNameList, DEFAULT_LIST_ID);
 		}
 	});
 });
