@@ -13,6 +13,7 @@
 		"cf:dev": "wrangler d1 migrations apply wichteltopf --local && wrangler dev",
 		"deploy": "wrangler d1 migrations apply wichteltopf --remote && wrangler deploy",
 		"test": "node --test \"test/**/*.test.ts\"",
+		"test:mobile": "node scripts/mobile-check.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
 		"format": "biome check --write .",
