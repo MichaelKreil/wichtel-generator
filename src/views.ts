@@ -180,11 +180,10 @@ export interface PotPageProps {
 	theme: string;
 	potPath: string;
 	participants: Participant[];
-	me?: Participant;
 	error?: string;
 }
 
-export function potPage({ theme, potPath, participants, me, error }: PotPageProps): Html {
+export function potPage({ theme, potPath, participants, error }: PotPageProps): Html {
 	const names = participants.map((p) => p.name);
 	return layout(
 		theme,
@@ -195,29 +194,48 @@ export function potPage({ theme, potPath, participants, me, error }: PotPageProp
 				? html`<p>Sei die/der Erste beim Wichteln!</p>`
 				: html`<p>${joinNames(names)} ${names.length === 1 ? 'macht' : 'machen'} bereits mit.</p>`
 		}
-		${
-			me
-				? html`<p>Du bist als <b>${me.name}</b> dabei. Dein geheimer Codename lautet:</p>
-			<p class="codename">${me.codeName}</p>`
-				: html`<form method="post" action="${potPath}">
+		<form method="post" action="${potPath}">
 			${error ? html`<p class="error" role="alert">${error}</p>` : ''}
 			<label for="name"><h2>Dein Vor- und Nachname</h2></label>
 			<input type="text" id="name" name="name" maxlength="${MAX_NAME_LENGTH}" autocomplete="name" required autofocus>
 			<button type="submit">Mitmachen</button>
-		</form>`
-		}`,
+		</form>`,
 	);
 }
 
-export function joinedPage(theme: string, participant: Participant): Html {
+export interface PersonalPageProps {
+	theme: string;
+	participant: Participant;
+	personalUrl: string;
+	isNew: boolean;
+	/** Set once the pot is closed. */
+	result?: ResultRow[];
+}
+
+/** A participant's own page, reachable via their personal link from any device. */
+export function personalPage({ theme, participant, personalUrl, isNew, result }: PersonalPageProps): Html {
+	if (result) {
+		const mine = result.find((r) => r.codeName === participant.codeName);
+		return layout(
+			theme,
+			'Ergebnis',
+			html`<h1>Die Ziehung ist abgeschlossen</h1>
+			<p>Hallo ${participant.name}, dein geheimer Codename ist <b>${participant.codeName}</b>.</p>
+			${mine ? html`<p class="codename">Du beschenkst ${mine.receiver}</p>` : ''}
+			<h2>Alle Ergebnisse</h2>
+			${resultList(result, participant.codeName)}`,
+		);
+	}
 	return layout(
 		theme,
 		'Du bist dabei',
-		html`<h1>Schön, dass du mitmachst!</h1>
-		<p>Dein geheimer Codename lautet:</p>
+		html`<h1>${isNew ? 'Schön, dass du mitmachst!' : 'Du bist dabei'}</h1>
+		<p>Du bist als <b>${participant.name}</b> im Topf. Dein geheimer Codename lautet:</p>
 		<p class="codename">${participant.codeName}</p>
-		<p>Merk ihn dir gut, am besten schreibst du ihn irgendwo auf. Aber verrate ihn niemandem, denn er ist geheim!</p>
-		<p>Sobald der Topf geschlossen ist, findest du unter dem Teilnahme-Link heraus, wen du beschenkst.</p>`,
+		<p>Verrate ihn niemandem, denn er ist geheim!</p>
+		<h2>Dein persönlicher Link</h2>
+		<p>Speichere dir diesen Link. Damit siehst du jederzeit deinen Codenamen und nach der Auslosung, wen du beschenkst, auch auf einem anderen Gerät.</p>
+		${copyField('Persönlicher Link: nur für dich', personalUrl)}`,
 	);
 }
 
@@ -230,15 +248,13 @@ function resultList(rows: ResultRow[], myCodeName?: string): Html {
 	</ul>`;
 }
 
-export function resultPage(theme: string, rows: ResultRow[], me?: Participant): Html {
-	const mine = me && rows.find((r) => r.codeName === me.codeName);
+export function resultPage(theme: string, rows: ResultRow[]): Html {
 	return layout(
 		theme,
 		'Ergebnis',
 		html`<h1>Die Ziehung ist abgeschlossen</h1>
-		${mine ? html`<p class="codename">Du beschenkst ${mine.receiver}</p>` : ''}
-		<p>Suche deinen geheimen Codenamen in der Liste:</p>
-		${resultList(rows, me?.codeName)}`,
+		<p>Suche deinen geheimen Codenamen in der Liste, oder öffne deinen persönlichen Link.</p>
+		${resultList(rows)}`,
 	);
 }
 

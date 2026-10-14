@@ -6,7 +6,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { safeEqual } from './random.ts';
 import { canDraw, cleanName, type Participant, type Pot, type Store } from './store.ts';
 import { getTheme, randomTheme, themesCss } from './themes.ts';
-import { adminPage, errorPage, joinedPage, potPage, type ResultRow, resultPage, startPage } from './views.ts';
+import { adminPage, errorPage, personalPage, potPage, type ResultRow, resultPage, startPage } from './views.ts';
 
 export interface AppOptions {
 	store: Store;
@@ -63,18 +63,45 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 	// --- participants ---
 
 	const cookieName = (pot: Pot) => `wichtel_${pot.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
-	const currentParticipant = (c: Context, pot: Pot, participants: Participant[]): Participant | undefined => {
-		const token = getCookie(c, cookieName(pot));
-		return token ? participants.find((p) => safeEqual(p.token, token)) : undefined;
-	};
+	const findByToken = (participants: Participant[], token: string | undefined) =>
+		token ? participants.find((p) => safeEqual(p.token, token)) : undefined;
+
+	/** Remembers the participant in this browser, so the pot link leads to their personal page. */
+	const rememberParticipant = (c: Context, pot: Pot, participant: Participant) =>
+		setCookie(c, cookieName(pot), participant.token, {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'Lax',
+			secure: origin(c).startsWith('https:'),
+			maxAge: COOKIE_MAX_AGE,
+		});
 
 	app.get('/:pot', async (c) => {
 		const pot = await store.getPot(c.req.param('pot'));
 		if (!pot) return notFound(c);
 		const participants = await store.listParticipants(pot.id);
-		const me = currentParticipant(c, pot, participants);
-		if (pot.closedAt !== null) return c.html(resultPage(pot.theme, results(participants), me));
-		return c.html(potPage({ theme: pot.theme, potPath: potPath(pot), participants, me }));
+		const me = findByToken(participants, getCookie(c, cookieName(pot)));
+		if (me) return c.redirect(personalPath(pot, me), 303);
+		if (pot.closedAt !== null) return c.html(resultPage(pot.theme, results(participants)));
+		return c.html(potPage({ theme: pot.theme, potPath: potPath(pot), participants }));
+	});
+
+	app.get('/:pot/ich/:token', async (c) => {
+		const pot = await store.getPot(c.req.param('pot'));
+		if (!pot) return notFound(c);
+		const participants = await store.listParticipants(pot.id);
+		const me = findByToken(participants, c.req.param('token'));
+		if (!me) return notFound(c);
+		rememberParticipant(c, pot, me);
+		return c.html(
+			personalPage({
+				theme: pot.theme,
+				participant: me,
+				personalUrl: origin(c) + personalPath(pot, me),
+				isNew: c.req.query('neu') !== undefined,
+				result: pot.closedAt !== null ? results(participants) : undefined,
+			}),
+		);
 	});
 
 	app.post('/:pot', async (c) => {
@@ -97,21 +124,16 @@ export function createApp({ store, baseUrl }: AppOptions): Hono {
 					return c.redirect(potPath(pot), 303);
 				case 'name-taken':
 					return showError(
-						`„${name}“ ist schon im Topf. Bitte gib deinen vollen Namen an, damit man euch unterscheiden kann.`,
+						`„${name}“ ist schon im Topf. Falls du das bist: Öffne deinen persönlichen Link, den du beim Eintragen bekommen hast. Sonst gib bitte deinen vollen Namen an, damit man euch unterscheiden kann.`,
 					);
 				case 'full':
 					return showError('Der Wichteltopf ist leider voll.');
 			}
 		}
 
-		setCookie(c, cookieName(pot), result.participant.token, {
-			path: '/',
-			httpOnly: true,
-			sameSite: 'Lax',
-			secure: origin(c).startsWith('https:'),
-			maxAge: COOKIE_MAX_AGE,
-		});
-		return c.html(joinedPage(pot.theme, result.participant));
+		rememberParticipant(c, pot, result.participant);
+		// redirect, so reloading the page doesn't submit the form again
+		return c.redirect(`${personalPath(pot, result.participant)}${result.isNew ? '?neu' : ''}`, 303);
 	});
 
 	// --- admin ---
@@ -196,6 +218,10 @@ function results(participants: Participant[]): ResultRow[] {
 
 function potPath(pot: Pot): string {
 	return `/${pot.id}`;
+}
+
+function personalPath(pot: Pot, participant: Participant): string {
+	return `/${pot.id}/ich/${participant.token}`;
 }
 
 function adminPath(pot: Pot): string {

@@ -35,10 +35,13 @@ async function createPot(): Promise<{ potPath: string; adminPath: string }> {
 	return { potPath, adminPath };
 }
 
+/** Joins and follows the redirect to the personal page. */
 async function join(potPath: string, name: string) {
 	const res = await post(potPath, { name });
-	const html = await res.text();
-	return { res, html, cookie: res.headers.get('set-cookie')?.split(';')[0] ?? '' };
+	const location = res.headers.get('location');
+	const personalPath = location ? new URL(location, BASE).pathname : '';
+	const html = location ? await (await get(location)).text() : await res.text();
+	return { res, html, personalPath, cookie: res.headers.get('set-cookie')?.split(';')[0] ?? '' };
 }
 
 describe('app', () => {
@@ -60,13 +63,23 @@ describe('app', () => {
 		assert.ok(admin.includes(`http://localhost${potPath}`));
 
 		const anna = await join(potPath, 'Anna');
-		assert.equal(anna.res.status, 200);
+		assert.equal(anna.res.status, 303);
+		assert.match(anna.personalPath, new RegExp(`^${potPath}/ich/[a-z0-9]{24}$`));
+		assert.match(anna.html, /Schön, dass du mitmachst/);
 		assert.match(anna.html, /Dein geheimer Codename lautet/);
+		assert.ok(anna.html.includes(`http://localhost${anna.personalPath}`));
 		assert.match(anna.cookie, /^wichtel_/);
 
-		// returning with the cookie shows the code name instead of the form
-		const page = await (await get(potPath, { Cookie: anna.cookie })).text();
-		assert.match(page, /Du bist als <b>Anna<\/b> dabei/);
+		// returning with the cookie leads to the personal page
+		const back = await get(potPath, { Cookie: anna.cookie });
+		assert.equal(back.status, 303);
+		assert.equal(back.headers.get('location'), anna.personalPath);
+
+		// the personal link works without the cookie (other device) and remembers the browser
+		const elsewhere = await get(anna.personalPath);
+		assert.match(await elsewhere.text(), /Du bist als <b>Anna<\/b> im Topf/);
+		assert.match(elsewhere.headers.get('set-cookie') ?? '', /^wichtel_/);
+		assert.equal((await get(`${potPath}/ich/wrongtoken`)).status, 404);
 
 		// duplicate names are rejected
 		assert.equal((await join(potPath, 'anna')).res.status, 400);
@@ -82,10 +95,14 @@ describe('app', () => {
 		const closed = await post(`${adminPath}/schliessen`, {});
 		assert.equal(closed.status, 303);
 
-		const result = await (await get(potPath, { Cookie: anna.cookie })).text();
+		const result = await (await get(anna.personalPath)).text();
 		assert.match(result, /Die Ziehung ist abgeschlossen/);
 		assert.match(result, /Du beschenkst/);
 		assert.equal(result.match(/« beschenkt/g)?.length, 4);
+
+		const publicResult = await (await get(potPath)).text();
+		assert.ok(!publicResult.includes('Du beschenkst'));
+		assert.equal(publicResult.match(/« beschenkt/g)?.length, 4);
 
 		// no more joining
 		assert.equal((await join(potPath, 'Dora')).res.status, 303);
