@@ -1,5 +1,5 @@
 /*
- * Wichteltopf: a festive photo, a kraft paper card, and hand-written gift tags.
+ * Wichteltopf: a festive photo, a card tinted to match it, and hand-written gift tags.
  * The photo (page background) comes from themes.css, everything else is defined here.
  */
 
@@ -20,9 +20,8 @@
 :root {
 	--ink: #2b1d14;
 	--ink-soft: #5c4636;
-	--kraft: #e8d2ae;
-	--kraft-edge: #c9a879;
-	--field: #f6e9d2;
+	/* card color: a light tint matching the background photo (set per theme in themes.css) */
+	--card: #e8d2ae;
 	--tag: #fffdf7;
 	--twine: #8a6a4a;
 	--wax: #a4161a;
@@ -75,13 +74,17 @@ body::before {
 	}
 }
 
-/* the kraft paper card that holds all content */
+/* the card that holds all content */
 main {
+	/* derived here, where the theme's --card is known (on :root it would stay at the default) */
+	--card-edge: color-mix(in oklab, var(--card) 70%, #5c4636);
+	--field: color-mix(in oklab, var(--card) 45%, #fff);
+
 	max-width: 36rem;
 	margin: 0 auto;
 	padding: 8px 32px 24px;
 	border-radius: 14px;
-	background: var(--kraft);
+	background: var(--card);
 	box-shadow:
 		0 1px 0 rgb(255 255 255 / 0.4) inset,
 		0 22px 48px -18px rgb(0 0 0 / 0.55);
@@ -209,7 +212,7 @@ b {
 	flex-direction: column;
 	padding: 12px 28px 14px 44px;
 	background:
-		radial-gradient(circle at 18px 50%, var(--kraft) 0 5px, var(--kraft-edge) 5px 6.5px, transparent 7px), var(--tag);
+		radial-gradient(circle at 18px 50%, var(--card) 0 5px, var(--card-edge) 5px 6.5px, transparent 7px), var(--tag);
 	clip-path: polygon(24px 0, 100% 0, 100% 100%, 24px 100%, 0 50%);
 	border-radius: 0 6px 6px 0;
 	font-family: var(--hand);
@@ -251,8 +254,7 @@ b {
 .tag-small .tag-paper {
 	padding: 6px 16px 8px 32px;
 	background:
-		radial-gradient(circle at 13px 50%, var(--kraft) 0 3.5px, var(--kraft-edge) 3.5px 5px, transparent 5.5px),
-		var(--tag);
+		radial-gradient(circle at 13px 50%, var(--card) 0 3.5px, var(--card-edge) 3.5px 5px, transparent 5.5px), var(--tag);
 	clip-path: polygon(17px 0, 100% 0, 100% 100%, 17px 100%, 0 50%);
 }
 
@@ -266,7 +268,7 @@ b {
 
 .tag-mine .tag-paper {
 	background:
-		radial-gradient(circle at 13px 50%, var(--kraft) 0 3.5px, var(--kraft-edge) 3.5px 5px, transparent 5.5px), #ffe9a8;
+		radial-gradient(circle at 13px 50%, var(--card) 0 3.5px, var(--card-edge) 3.5px 5px, transparent 5.5px), #ffe9a8;
 }
 
 .result {
@@ -299,7 +301,7 @@ select {
 	width: 100%;
 	margin: 0.5rem 0;
 	padding: 10px 12px;
-	border: 2px solid var(--kraft-edge);
+	border: 2px solid var(--card-edge);
 	border-radius: var(--radius);
 	background: var(--field);
 	color: var(--ink);
@@ -348,7 +350,7 @@ button.secondary,
 button.secondary:hover,
 .button.secondary:hover {
 	background: var(--ink);
-	color: var(--kraft);
+	color: var(--card);
 }
 
 /* compact, but still at least 44px high: the recommended minimum for touch */
@@ -493,7 +495,7 @@ button.sticky {
 	align-items: center;
 	gap: 8px;
 	padding: 6px 0;
-	border-bottom: 1px dashed var(--kraft-edge);
+	border-bottom: 1px dashed var(--card-edge);
 }
 
 .pair {
@@ -526,7 +528,7 @@ button.sticky {
 footer {
 	margin-top: 2rem;
 	padding-top: 0.5rem;
-	border-top: 1px dashed var(--kraft-edge);
+	border-top: 1px dashed var(--card-edge);
 	font-size: 0.9rem;
 }
 
