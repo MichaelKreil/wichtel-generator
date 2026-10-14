@@ -76,4 +76,4 @@ Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel r
 docker pull ghcr.io/michaelkreil/wichtel-generator:latest   # published for tags v*
 ```
 
-The image runs as a non-root user, stores data in the `/app/database` volume and has a healthcheck on `/healthz`. `compose.yaml` shows a setup with nginx-proxy and Let's Encrypt.
+The image runs as a non-root user, stores data in the `/app/database` volume and has a healthcheck on `/healthz`. Put it behind a reverse proxy for TLS and set `BASEURL`.
