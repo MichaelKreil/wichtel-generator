@@ -18,6 +18,19 @@ describe('worker', () => {
 		assert.equal(res.headers.get('location'), 'https://wichteltopf.de/Abc-123?x=1');
 	});
 
+	it('redirects http to https, also for www', async () => {
+		for (const from of ['http://wichteltopf.de/Abc-123?x=1', 'http://www.wichteltopf.de/Abc-123?x=1']) {
+			const res = await worker.fetch(new Request(from), createEnv(), {});
+			assert.equal(res.status, 301);
+			assert.equal(res.headers.get('location'), 'https://wichteltopf.de/Abc-123?x=1');
+		}
+	});
+
+	it('keeps http for local development', async () => {
+		const res = await worker.fetch(new Request('http://localhost:8787/'), createEnv(), {});
+		assert.equal(res.status, 200);
+	});
+
 	it('serves the app', async () => {
 		const res = await worker.fetch(new Request('https://wichteltopf.de/'), createEnv(), {});
 		assert.equal(res.status, 200);

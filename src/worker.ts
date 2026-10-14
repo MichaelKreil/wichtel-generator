@@ -35,10 +35,13 @@ function setup(env: Env) {
 
 export default {
 	fetch(request: Request, env: Env, ctx: unknown) {
-		// www.wichteltopf.de → wichteltopf.de (static files are served by Cloudflare before reaching this)
+		// http → https and www.wichteltopf.de → wichteltopf.de. Static files are served by Cloudflare before
+		// reaching this; "Always Use HTTPS" in the Cloudflare dashboard covers those too.
 		const url = new URL(request.url);
-		if (url.hostname.startsWith('www.')) {
-			url.hostname = url.hostname.slice(4);
+		const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+		if ((url.protocol === 'http:' && !isLocal) || url.hostname.startsWith('www.')) {
+			url.protocol = isLocal ? url.protocol : 'https:';
+			url.hostname = url.hostname.replace(/^www\./, '');
 			return Response.redirect(url.toString(), 301);
 		}
 		return setup(env).app.fetch(request, env, ctx as never);
