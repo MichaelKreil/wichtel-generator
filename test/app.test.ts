@@ -263,3 +263,27 @@ describe('deleting data', () => {
 		assert.equal((await store.listParticipants(potPath.slice(1))).length, 3);
 	});
 });
+
+describe('input validation', () => {
+	it('treats uploaded files as missing names', async () => {
+		const { potPath } = await createPot();
+		const form = new FormData();
+		form.append('name', new File(['x'], 'evil.txt'));
+		const res = await app.request(`${BASE}${potPath}`, {
+			method: 'POST',
+			body: form,
+			headers: { Origin: BASE, Host: 'localhost' },
+		});
+		assert.equal(res.status, 400);
+		assert.equal((await store.listParticipants(potPath.slice(1))).length, 0);
+	});
+
+	it('ignores invalid ids', async () => {
+		const { potPath, adminPath } = await createPot();
+		await join(potPath, 'Anna');
+		for (const participant of ['abc', '1e3', '-1', '1.5', '']) {
+			assert.equal((await post(`${adminPath}/entfernen`, { participant })).status, 303);
+		}
+		assert.equal((await store.listParticipants(potPath.slice(1))).length, 1);
+	});
+});

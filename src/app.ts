@@ -167,7 +167,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 		if (!pot) return notFound(c);
 		if (pot.closedAt !== null) return c.redirect(potPath(pot), 303);
 
-		const name = cleanName((await c.req.parseBody()).name);
+		const name = cleanName(formText((await c.req.parseBody()).name));
 		const showError = async (error: string) =>
 			c.html(
 				potPage({
@@ -237,19 +237,22 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 
 	admin.post('/entfernen', async (c) => {
 		const body = await c.req.parseBody();
-		await store.removeParticipant(c.var.pot, Number(body.participant));
+		const participant = formId(body.participant);
+		if (participant) await store.removeParticipant(c.var.pot, participant);
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
 	admin.post('/ausschluss', async (c) => {
 		const body = await c.req.parseBody();
-		await store.addExclusion(c.var.pot, Number(body.a), Number(body.b));
+		const [a, b] = [formId(body.a), formId(body.b)];
+		if (a && b) await store.addExclusion(c.var.pot, a, b);
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
 	admin.post('/ausschluss-entfernen', async (c) => {
 		const body = await c.req.parseBody();
-		await store.removeExclusion(c.var.pot, Number(body.a), Number(body.b));
+		const [a, b] = [formId(body.a), formId(body.b)];
+		if (a && b) await store.removeExclusion(c.var.pot, a, b);
 		return c.redirect(adminPath(c.var.pot), 303);
 	});
 
@@ -286,6 +289,18 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	});
 
 	return app;
+}
+
+/** A text form field; anything else (missing, uploaded files, repeated fields) counts as empty. */
+function formText(value: unknown): string {
+	return typeof value === 'string' ? value : '';
+}
+
+/** A database id from a form field, or undefined if it isn't a positive integer. */
+function formId(value: unknown): number | undefined {
+	const text = formText(value);
+	const id = Number(text);
+	return /^\d+$/.test(text) && Number.isSafeInteger(id) && id > 0 ? id : undefined;
 }
 
 function results(participants: Participant[]): ResultRow[] {
