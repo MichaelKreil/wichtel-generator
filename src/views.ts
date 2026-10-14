@@ -149,7 +149,7 @@ export function adminPage(props: AdminPageProps): Html {
 			}
 			${
 				participants.length >= 2
-					? html`<form method="post" action="${adminPath}/ausschluss" class="row">
+					? html`<form method="post" action="${adminPath}/ausschluss" class="pair">
 				<select name="a" required aria-label="Erste Person">${options(0)}</select>
 				<span>⟷</span>
 				<select name="b" required aria-label="Zweite Person">${options(1)}</select>
