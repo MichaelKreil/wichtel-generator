@@ -1,7 +1,8 @@
 // Entry point for Node.js / Docker. For Cloudflare see src/worker.ts.
 import { serve } from '@hono/node-server';
+import { getConnInfo } from '@hono/node-server/conninfo';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { createApp } from './app.ts';
 import { CODE_NAMES } from './codenames.ts';
 import { loadConfig } from './config.ts';
@@ -41,7 +42,12 @@ const rateLimiters = { create: memoryRateLimiter(3, 60_000), write: memoryRateLi
 for (const file of ['/favicon.ico', '/apple-touch-icon.png']) {
 	app.get(file, serveStatic({ path: new URL(`../public${file}`, import.meta.url).pathname }));
 }
-app.route('/', createApp({ store, baseUrl: config.baseUrl, rateLimiters }));
+// X-Forwarded-For can be faked by anyone, so it's only used when a trusted proxy sets it
+const clientIp = (c: Context) =>
+	(config.trustProxy ? c.req.header('x-forwarded-for')?.split(',')[0]?.trim() : undefined) ??
+	getConnInfo(c).remote.address ??
+	'';
+app.route('/', createApp({ store, baseUrl: config.baseUrl, rateLimiters, clientIp }));
 
 async function cleanup(): Promise<void> {
 	const deleted = await store.deleteInactiveSince(Date.now() - config.potTtlDays * DAY);

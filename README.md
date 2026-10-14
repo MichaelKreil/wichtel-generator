@@ -71,10 +71,11 @@ Useful commands: `npx wrangler tail` (live logs), `npx wrangler d1 time-travel r
 | `PORT`          | `8080`                    |                                                                   |
 | `BASEURL`       | derived from request      | Public URL used in the displayed links, e.g. `https://wichteln.example.org` |
 | `DATABASE_PATH` | `database/wichtel.sqlite` | SQLite file                                                       |
+| `TRUST_PROXY`   | off                       | Set to `1` behind a reverse proxy, to rate-limit by `X-Forwarded-For` |
 | `POT_TTL_DAYS`  | `90`                      | Pots without activity are deleted after this many days            |
 
 ```bash
 docker pull ghcr.io/michaelkreil/wichtel-generator:latest   # published for tags v*
 ```
 
-The image runs as a non-root user, stores data in the `/app/database` volume and has a healthcheck on `/healthz`. Put it behind a reverse proxy for TLS and set `BASEURL`.
+The image runs as a non-root user, stores data in the `/app/database` volume and has a healthcheck on `/healthz`. Put it behind a reverse proxy for TLS and set `BASEURL` and `TRUST_PROXY=1`.

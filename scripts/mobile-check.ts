@@ -44,7 +44,8 @@ async function waitFor(url: string): Promise<void> {
 // --- start the server and create test data ---
 
 const server = spawn(process.execPath, ['src/server.ts'], {
-	env: { ...process.env, PORT: String(PORT), DATABASE_PATH: join(tmp, 'db.sqlite') },
+	// TRUST_PROXY: each test request pretends to come from its own IP, to stay below the rate limits
+	env: { ...process.env, PORT: String(PORT), DATABASE_PATH: join(tmp, 'db.sqlite'), TRUST_PROXY: '1' },
 	stdio: 'inherit',
 });
 processes.push(server);

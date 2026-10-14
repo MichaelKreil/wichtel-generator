@@ -155,7 +155,7 @@ describe('rate limiting', () => {
 	it('rejects too many form submissions per IP', async () => {
 		const store = new Store(new NodeDatabase(':memory:'), CODE_NAMES);
 		const rateLimiters = { create: memoryRateLimiter(2, 60_000), write: memoryRateLimiter(30, 60_000) };
-		const app = createApp({ store, rateLimiters });
+		const app = createApp({ store, rateLimiters, clientIp: (c) => c.req.header('cf-connecting-ip') ?? '' });
 		const create = (ip: string) =>
 			app.request(`${BASE}/neu`, {
 				method: 'POST',

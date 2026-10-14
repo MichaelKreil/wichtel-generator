@@ -5,6 +5,8 @@ export interface Config {
 	databasePath: string;
 	/** Pots without any activity for this many days are deleted. */
 	potTtlDays: number;
+	/** Behind a reverse proxy: take the client IP from X-Forwarded-For. */
+	trustProxy: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -13,6 +15,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 		baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined,
 		databasePath: env.DATABASE_PATH ?? 'database/wichtel.sqlite',
 		potTtlDays: parseInteger(env.POT_TTL_DAYS, 90),
+		trustProxy: env.TRUST_PROXY === '1' || env.TRUST_PROXY === 'true',
 	};
 }
 

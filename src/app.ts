@@ -23,12 +23,14 @@ export interface AppOptions {
 	baseUrl?: string;
 	/** Per-IP limits for form submissions, to protect the database quota. */
 	rateLimiters?: RateLimiters;
+	/** The client's IP address for rate limiting. Depends on the runtime and proxy setup. */
+	clientIp?: (c: Context) => string;
 }
 
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
 /** The app without static file serving, which is done by Cloudflare or by src/server.ts. */
-export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
+export function createApp({ store, baseUrl, rateLimiters, clientIp = () => '' }: AppOptions): Hono {
 	const app = new Hono();
 
 	/** Public origin, e.g. "https://wichteln.example.org". Behind a proxy, BASEURL should be set. */
@@ -82,8 +84,7 @@ export function createApp({ store, baseUrl, rateLimiters }: AppOptions): Hono {
 	});
 	app.use(async (c, next) => {
 		if (c.req.method !== 'POST' || !rateLimiters) return next();
-		// Cloudflare sets cf-connecting-ip; behind other proxies x-forwarded-for
-		const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? '';
+		const ip = clientIp(c);
 		const limiter = c.req.path === '/neu' ? rateLimiters.create : rateLimiters.write;
 		if (await limiter(ip)) return next();
 		return c.html(

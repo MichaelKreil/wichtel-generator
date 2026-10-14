@@ -27,6 +27,8 @@ function setup(env: Env) {
 			store,
 			baseUrl: env.BASEURL?.replace(/\/+$/, '') || undefined,
 			rateLimiters: { create: bindingRateLimiter(env.CREATE_LIMITER), write: bindingRateLimiter(env.WRITE_LIMITER) },
+			// set by Cloudflare, can't be faked by clients
+			clientIp: (c) => c.req.header('cf-connecting-ip') ?? '',
 		});
 		cached = { env, store, app };
 	}
