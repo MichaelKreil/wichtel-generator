@@ -214,3 +214,14 @@ describe('themes.css', () => {
 		assert.equal(file, `${themesCss()}\n`);
 	});
 });
+
+describe('admin links by mail', () => {
+	it('offers a mailto link containing both links', async () => {
+		const { potPath, adminPath } = await createPot();
+		const html = await (await get(adminPath)).text();
+		const href = html.match(/href="(mailto:[^"]+)"/)?.[1]?.replaceAll('&amp;', '&') ?? '';
+		const body = new URLSearchParams(href.slice(href.indexOf('?') + 1)).get('body') ?? '';
+		assert.ok(body.includes(`http://localhost${potPath}\n`));
+		assert.ok(body.includes(`http://localhost${adminPath}\n`));
+	});
+});

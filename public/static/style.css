@@ -141,7 +141,8 @@ select:hover {
 	outline-offset: 2px;
 }
 
-button {
+button,
+.button {
 	display: inline-block;
 	margin: 0.75rem 0;
 	padding: 10px 20px;
@@ -152,23 +153,27 @@ button {
 	font: inherit;
 	font-size: 1.15rem;
 	font-weight: 600;
+	text-decoration: none;
 	cursor: pointer;
 	transition:
 		background-color 0.1s,
 		color 0.1s;
 }
 
-button:hover {
+button:hover,
+.button:hover {
 	background: transparent;
 	color: var(--fg);
 }
 
-button.secondary {
+button.secondary,
+.button.secondary {
 	background: transparent;
 	color: var(--fg);
 }
 
-button.secondary:hover {
+button.secondary:hover,
+.button.secondary:hover {
 	background: var(--fg);
 	color: var(--fg-inverse);
 }

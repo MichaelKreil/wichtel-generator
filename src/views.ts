@@ -120,6 +120,13 @@ export interface AdminPageProps {
 	result?: ResultRow[];
 }
 
+/** mailto: link that opens the organiser's mail app with both links, so they can't get lost. */
+function linksMail(potUrl: string, adminUrl: string): string {
+	const subject = 'Mein Wichteltopf';
+	const body = `Teilnahme-Link (an alle Wichtel verschicken):\n${potUrl}\n\nAdmin-Link (geheim, nur für mich):\n${adminUrl}\n`;
+	return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export function adminPage(props: AdminPageProps): Html {
 	const { participants, exclusions, adminPath } = props;
 	const nameOf = new Map(participants.map((p) => [p.id, p.name]));
@@ -136,6 +143,7 @@ export function adminPage(props: AdminPageProps): Html {
 			<p>Bitte speichere dir beide Links gut ab.</p>
 			${copyField('Teilnahme-Link: an alle Wichtel verschicken', props.potUrl, 'Wir wichteln! Wirf hier deinen Namen in den Wichteltopf:')}
 			${copyField('Admin-Link: geheim! Nur damit kannst du den Topf verwalten und schließen.', props.adminUrl)}
+			<a class="button secondary" href="${linksMail(props.potUrl, props.adminUrl)}">Links an mich mailen</a>
 		</section>
 
 		${
