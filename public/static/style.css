@@ -22,6 +22,7 @@
 
 html {
 	min-height: 100%;
+	background: #888;
 }
 
 body {
@@ -29,14 +30,25 @@ body {
 	min-height: 100vh;
 	padding: 48px 16px 96px;
 	color: var(--fg);
-	background: #888 var(--bg-sm) center / cover fixed;
 	font:
 		300 1rem / 1.45 system-ui,
 		sans-serif;
 }
 
+/* The photo sits on its own fixed layer: iOS Safari ignores background-attachment: fixed. */
+body::before {
+	content: "";
+	position: fixed;
+	z-index: -1;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100lvh;
+	background: var(--bg-sm) center / cover no-repeat;
+}
+
 @media (min-width: 1000px) {
-	body {
+	body::before {
 		background-image: var(--bg-lg);
 	}
 }
