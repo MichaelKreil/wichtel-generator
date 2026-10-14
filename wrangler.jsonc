@@ -24,5 +24,8 @@
 	"observability": {
 		"enabled": true
 	},
-	"routes": [{ "pattern": "wichteltopf.de", "custom_domain": true }]
+	"routes": [
+		{ "pattern": "wichteltopf.de", "custom_domain": true },
+		{ "pattern": "www.wichteltopf.de", "custom_domain": true }
+	]
 }

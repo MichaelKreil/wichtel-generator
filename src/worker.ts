@@ -27,6 +27,12 @@ function setup(env: Env) {
 
 export default {
 	fetch(request: Request, env: Env, ctx: unknown) {
+		// www.wichteltopf.de → wichteltopf.de (static files are served by Cloudflare before reaching this)
+		const url = new URL(request.url);
+		if (url.hostname.startsWith('www.')) {
+			url.hostname = url.hostname.slice(4);
+			return Response.redirect(url.toString(), 301);
+		}
 		return setup(env).app.fetch(request, env, ctx as never);
 	},
 
