@@ -16,6 +16,11 @@ const db = new NodeDatabase(config.databasePath);
 const store = new Store(db, CODE_NAMES);
 
 const app = new Hono();
+// the app sets its own security headers; this covers the static files, too (like public/_headers on Cloudflare)
+app.use(async (c, next) => {
+	await next();
+	c.header('X-Content-Type-Options', 'nosniff');
+});
 app.use(
 	'/static/*',
 	serveStatic({

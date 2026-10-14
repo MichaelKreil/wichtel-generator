@@ -1,5 +1,9 @@
 # Cache rules for static files on Cloudflare (the Node server sets the same in src/server.ts).
 # CSS/JS keep their file names when they change, so they are only cached briefly.
+# Pages get their security headers from the app; static files at least this one.
+/*
+  X-Content-Type-Options: nosniff
+
 /static/*
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
